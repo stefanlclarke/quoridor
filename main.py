@@ -1,14 +1,16 @@
 from trainers.qtrainer import QTrainer
 from trainers.ac_trainer import ACTrainer
 from models.q_models import QNetBot
+from models.actor_models import Actor
 import time
 
-pretrained_qnet = QNetBot('3x128_9x9_4Feb66')
-trainer = ACTrainer(qnet=pretrained_qnet.net, iterations_only_actor_train = 5*100)
+pretrained_qnet = QNetBot('3x256_9x9_7FebAC5')
+actor = Actor('3x256_9x9_7FebAC5')
+trainer = ACTrainer(qnet=pretrained_qnet.net, actor, iterations_only_actor_train = 5*100)
 get_time_info = False
 
 t0 = time.time()
-trainer.train(1000000000, 200, '3x256_9x9_7FebAC', get_time_info=get_time_info)
+trainer.train(1000000000, 200, '3x256_9x9_7FebAC_1', get_time_info=get_time_info)
 t1 = time.time()
 
 if get_time_info:

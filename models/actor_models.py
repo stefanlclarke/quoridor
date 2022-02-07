@@ -14,10 +14,13 @@ input_dim = parameters.bot_in_dimension
 actor_output_dim = parameters.bot_out_dimension
 
 class Actor(NN):
-    def __init__(self):
+    def __init__(self, save_name = None):
         self.input_size = input_dim
         super().__init__(self.input_size, actor_size_hidden, actor_num_hidden, actor_output_dim)
         self.softmax = nn.Softmax(dim=0)
+
+        if save_name is not None:
+            self.load_state_dict(torch.load(name + 'ACTOR'))
 
     def forward(self, x):
         output = self.feed_forward(x)

@@ -23,7 +23,11 @@ class Parameters:
         self.move_prob_decay = 1.
         self.gamma = 0.95
         self.lambd = 0.5
+
         self.learning_rate = 0.004
+        self.actor_learning_rate = 0.0004
+        self.critic_learning_rate = 0.001
+
         self.minimum_epsilon = 0.1
         self.minimum_move_prob = 0.5
         self.cut_at_random_move = True
@@ -33,4 +37,4 @@ class Parameters:
         self.games_per_iter = 5
 
         self.max_grad_norm = 1.
-        self.entropy_constant = 0.1
+        self.entropy_constant = 1.
