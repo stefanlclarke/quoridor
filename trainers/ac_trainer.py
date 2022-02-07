@@ -33,7 +33,7 @@ max_grad_norm = parameters.max_grad_norm
 
 
 class ACTrainer(Trainer):
-    def __init__(self, qnet=None, actor=None):
+    def __init__(self, qnet=None, actor=None, iterations_only_actor_train = 0):
         """
         Handles the training of an actor and a Q-network using an actor
         critic algorithm.
@@ -43,7 +43,7 @@ class ACTrainer(Trainer):
         if qnet is None:
             self.net = QNet().to(device)
         else:
-            self.net = net.to(device)
+            self.net = qnet.to(device)
         if actor is None:
             self.actor = Actor().to(device)
         else:
@@ -51,6 +51,9 @@ class ACTrainer(Trainer):
 
         self.optimizer = optim.Adam(self.net.parameters(), lr=learning_rate)
         self.actor_opt = optim.Adam(self.actor.parameters(), lr=learning_rate)
+
+        self.learning_iterations_so_far = 0
+        self.iterations_only_actor_train = iterations_only_actor_train
 
     def on_policy_step(self, state, info):
         """
@@ -102,7 +105,12 @@ class ACTrainer(Trainer):
         torch.save(self.net.state_dict(), './saves/{}'.format(name + str(j)))
         torch.save(self.actor.state_dict(), './saves/{}'.format(name + str(j) + 'ACTOR'))
 
-    def learn(self, train_critic=True):
+    def learn(self):
+        if self.learning_iterations_so_far >= self.iterations_only_actor_train:
+            train_critic = True
+        else:
+            train_critic = False
+
         """
         Calculates loss and does backpropagation.
         """
@@ -127,4 +135,5 @@ class ACTrainer(Trainer):
         self.actor_opt.step()
 
         loss = actor_loss_val + critic_loss
+        self.learning_iterations_so_far += 1
         return float(loss.detach().cpu().numpy())

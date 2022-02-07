@@ -1,5 +1,6 @@
 import numpy as np
 import copy
+import time
 from game.game_helper_functions import *
 from parameters import Parameters
 from game.printing import get_printable_board
@@ -27,7 +28,7 @@ class Player:
         self.pos = start_pos
 
 class Quoridor:
-    def __init__(self, p1_start=np.array([0, board_size//2]), p2_start=np.array([board_size-1, board_size//2])):
+    def __init__(self, p1_start=np.array([0, board_size//2]), p2_start=np.array([board_size-1, board_size//2]), get_time_info=False):
         self.board_size = board_size
         self.board = np.zeros((board_size, board_size, 4))
         self.players = [Player(p1_start, start_walls), Player(p2_start, start_walls)]
@@ -39,9 +40,14 @@ class Quoridor:
         self.start_walls = parameters.number_of_walls
         self.winner = 0
 
-    def move(self, command):
+    def move(self, command, get_time_info=False):
+        moving = 0.
+        illegal_move_handling = 0.
+        checking_winner = 0.
+        wall_handling = 0.
+
+        t0 = time.time()
         if not self.playing:
-            #print('the game is over!')
             return None
 
         player_moving = self.players[self.moving_now]
@@ -53,6 +59,7 @@ class Quoridor:
         legal_move, jump = move_piece(self.board, player_moving_pos, move_command)
         reward = 0
 
+        t1 = time.time()
         if legal_move:
             if jump:
                 self.players[self.moving_now].pos = 2*move_command + player_moving_pos
@@ -73,6 +80,7 @@ class Quoridor:
             reward += parameters.illegal_move_reward
             legal = False
 
+        t2 = time.time()
         if not legal:
             possible_moves = get_legal_moves(self.board, player_moving_pos)
 
@@ -91,15 +99,25 @@ class Quoridor:
                 else:
                     self.players[self.moving_now].pos = random_move + player_moving_pos
 
+        t3 = time.time()
         winner = check_win(self.board)
         if winner != 0:
-            #print('the winner is player {}!'.format(winner))
             self.playing = False
             self.winner = winner
 
         self.moving_now = (self.moving_now + 1) % 2
 
-        return self.get_state(), self.playing, winner, reward, legal
+        t4 = time.time()
+
+        moving += t1 - t0
+        wall_handling += t2 - t1
+        illegal_move_handling += t3 - t2
+        checking_winner += t4 - t3
+
+        if not get_time_info:
+            return self.get_state(), self.playing, winner, reward, legal
+        else:
+            return self.get_state(), self.playing, winner, reward, legal, moving, illegal_move_handling, checking_winner, wall_handling
 
     def get_state(self, flip=False, flatten=True):
         p1_walls = np.zeros(self.start_walls + 1)

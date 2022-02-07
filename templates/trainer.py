@@ -4,6 +4,7 @@ import numpy as np
 from models.memory import Memory
 from game.move_reformatter import *
 from game.shortest_path import ShortestPathBot
+import time
 
 parameters = Parameters()
 games_per_iter = parameters.games_per_iter
@@ -23,6 +24,12 @@ class Trainer:
         self.possible_moves = [np.zeros(parameters.bot_out_dimension) for _ in range(parameters.bot_out_dimension)]
         for i in range(parameters.bot_out_dimension):
             self.possible_moves[i][i] = 1
+
+    def handle_pre_training(self):
+        """
+        Function for handling anything before the playing of games begins.
+        """
+        pass
 
     def on_policy_step(self, state, info):
         """
@@ -44,6 +51,13 @@ class Trainer:
         When max_rounds_per_game is reached the game is played out using
         the shortest_path policy.
         """
+        game_processing_time = 0.
+        on_policy_time = 0.
+        off_policy_time = 0.
+        moving_time = 0.
+        illegal_move_handling_time = 0.
+        checking_winner_time = 0.
+        wall_handling_time = 0.
 
         rounds = 0
         unif = np.random.uniform()
@@ -53,6 +67,7 @@ class Trainer:
             self.game.reset()
         playing = True
         while playing:
+            t0 = time.time()
             if self.game.moving_now == 0:
                 flip = False
                 player = 1
@@ -66,6 +81,8 @@ class Trainer:
 
             if rounds <= parameters.max_rounds_per_game:
                 move, step_info, off_policy = self.on_policy_step(state, info)
+                t1 = time.time()
+                on_policy_time += t1 - t0
 
             if rounds > parameters.max_rounds_per_game:
                 unformatted_move = self.spbots[player-1].move(self.game.get_state(flatten=False)[0])
@@ -74,11 +91,13 @@ class Trainer:
                 move[move_ind] = 1
                 off_policy = True
                 step_info = self.off_policy_step(state, move_ind, info)
+                t1 = time.time()
+                off_policy_time += t1 - t0
 
             if printing:
                 print('current game state')
                 self.game.print()
-            new_state, playing, winner, reward, legal = self.game.move(move_reformatter(move, flip=flip))
+            new_state, playing, winner, reward, legal, moving, illegal_move_handling, checking_winner, wall_handling = self.game.move(move_reformatter(move, flip=flip), get_time_info=True)
             if printing:
                 print('player {} move {} legal {}'.format(player, move_reformatter(move, flip=flip), legal))
 
@@ -94,6 +113,14 @@ class Trainer:
                 if winner == 2:
                     self.memory_1.rewards[-1] = self.memory_1.rewards[-1] - parameters.win_reward
                     self.memory_2.rewards[-1] = self.memory_2.rewards[-1] + parameters.win_reward
+            t2 = time.time()
+            game_processing_time += t2 - t1
+            moving_time += moving
+            illegal_move_handling_time += illegal_move_handling
+            checking_winner_time += checking_winner
+            wall_handling_time += wall_handling
+
+        return game_processing_time, on_policy_time, off_policy_time, moving_time, illegal_move_handling_time, checking_winner_time, wall_handling_time
 
     def reset_memories(self):
         """
@@ -126,7 +153,7 @@ class Trainer:
         """
         raise NotImplementedError()
 
-    def train(self, iterations, save_freq, name):
+    def train(self, iterations, save_freq, name, get_time_info=False):
         """
         Runs the full training loop.
 
@@ -134,17 +161,47 @@ class Trainer:
         save_freq: saves every time this many iterations have passed
         name: name to save to.
         """
+        time_playing = 0.
+        time_learning = 0.
+        game_processing_time = 0.
+        on_policy_time = 0.
+        off_policy_time = 0.
+        moving_time = 0.
+        illegal_move_handling_time = 0.
+        checking_winner_time = 0.
+        wall_handling_time = 0.
+
+        self.handle_pre_training()
 
         losses = 0
         for j in range(iterations//save_freq):
             for i in range(save_freq):
                 self.reset_memories()
+                if get_time_info:
+                    t0 = time.time()
                 for k in range(games_per_iter):
-                    self.play_game(info=[j, i, k])
+                    game_time, on_time, off_time, m_time, ill_time, cw_time, wh_time = self.play_game(info=[j, i, k])
                     self.log_memories()
+                    if get_time_info:
+                        game_processing_time += game_time
+                        on_policy_time += on_time
+                        off_policy_time += off_time
+                        moving_time += m_time
+                        illegal_move_handling_time += ill_time
+                        checking_winner_time += cw_time
+                        wall_handling_time += wh_time
+                if get_time_info:
+                    t1 = time.time()
                 loss = self.learn()
                 losses += loss
+                if get_time_info:
+                    t2 = time.time()
+                    time_playing += t1 - t0
+                    time_learning += t2 - t1
             print('saving iteration {}'.format(j * save_freq))
             print('loss {}'.format(loss/save_freq))
             self.save(name, info=[j,i,k])
             losses = 0
+
+        if get_time_info:
+            return time_playing, time_learning, game_processing_time, on_policy_time, off_policy_time, moving_time, illegal_move_handling_time, checking_winner_time, wall_handling_time

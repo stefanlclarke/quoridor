@@ -16,8 +16,8 @@ class Parameters:
         self.critic_num_hidden = 3
         self.critic_size_hidden = 256
 
-        self.epsilon = 0.2
-        self.epsilon_decay = 0.97
+        self.epsilon = 0.9
+        self.epsilon_decay = 0.985
         self.move_prob = 0.4
         self.forward_prob = 0.4
         self.move_prob_decay = 1.
@@ -30,7 +30,7 @@ class Parameters:
 
         self.random_proportion = 0.6
 
-        self.games_per_iter = 2
+        self.games_per_iter = 5
 
         self.max_grad_norm = 1.
         self.entropy_constant = 0.1
