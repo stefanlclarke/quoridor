@@ -20,7 +20,7 @@ class Actor(NN):
         self.softmax = nn.Softmax(dim=0)
 
         if save_name is not None:
-            self.load_state_dict(torch.load(name + 'ACTOR'))
+            self.load_state_dict(torch.load(save_name + 'ACTOR'))
 
     def forward(self, x):
         output = self.feed_forward(x)
