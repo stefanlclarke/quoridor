@@ -19,10 +19,11 @@ else:
     device = 'cpu'
 
 class ACTreeSearch(TreeSearch):
-    def __init__(self, net, actor, search_depth=3, number_checks=3, controlling=2):
+    def __init__(self, net, actor, search_depth=3, number_checks=3, controlling=2, max_prob_check=None):
         super().__init__(search_depth, number_checks, controlling)
         self.net = net
         self.actor = actor
+        self.max_prob_check = max_prob_check
 
     def check_iter(self, game):
         copy_game = game
@@ -39,7 +40,13 @@ class ACTreeSearch(TreeSearch):
         np_probs = actor_probabilities.cpu().detach().numpy()
         highest_actor_probs = np.argpartition(np_probs, -self.number_checks)[-self.number_checks:]
         probabilities_sorted = sorted(np_probs)
-        arguments_sorted = np.argsort(np_probs)
+
+        if self.max_prob_check is not None:
+            probability_cumsums_sorted = np.cumsum(probabilities_sorted)
+            number_entries = np.sum(probability_cumsums_sorted <= self.max_prob_check) + 1
+            arguments_sorted = np.argsort(np_probs)[0:number_entries]
+        else:
+            arguments_sorted = np.argsort(np_probs)
 
         values = []
         legal_moves = []

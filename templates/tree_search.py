@@ -54,7 +54,6 @@ class TreeSearch(QuoridoorAgent):
             prev_seq = np.concatenate(move_list[:-1]).tobytes()
             last_state_info = self.state_dict[prev_seq]
             copy_game.copy_board(*last_state_info)
-        #for i in range(len(move_list)):
 
         if len(move_list) > 0:
             move_to_make = move_list[-1]
@@ -145,9 +144,12 @@ class TreeSearch(QuoridoorAgent):
             prev_keys = next_check
 
         initial_move_new_values = [self.search_dict[move.tobytes()] for move in initial_moves]
-        argmax = np.argmax(initial_move_new_values)
 
-        return initial_moves[argmax]
+        if len(initial_move_new_values) > 0:
+            argmax = np.argmax(initial_move_new_values)
+            return initial_moves[argmax]
+        else:
+            return self.possible_moves[0]
 
     def print(self):
         for k,v in self.search_dict.items():
