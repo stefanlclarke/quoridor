@@ -6,7 +6,7 @@ import time
 
 pretrained_qnet = QNetBot('3x256_9x9_7FebAC5')
 actor = Actor('3x256_9x9_7FebAC5')
-trainer = ACTrainer(qnet=pretrained_qnet.net, actor, iterations_only_actor_train = 5*100)
+trainer = ACTrainer(qnet=pretrained_qnet.net, actor=actor, iterations_only_actor_train = 5*100)
 get_time_info = False
 
 t0 = time.time()
