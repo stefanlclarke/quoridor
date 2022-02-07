@@ -7,9 +7,9 @@ else:
     device = 'cpu'
 
 def actor_loss(memory, advantages, entropy_constant=0.001):
-    loss = torch.tensor(0.)
+    loss = torch.tensor(0.).to(device)
     for i in range(len(advantages)):
-        advantage = advantages[i].detach().to(device)
+        advantage = advantages[i].detach()
         probs = [x.unsqueeze(0) for x in memory.game_log[i][4][2]]
         probabilities = torch.cat(probs)
         distributions = memory.game_log[i][4][3]
