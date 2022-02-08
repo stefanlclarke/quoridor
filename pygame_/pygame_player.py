@@ -12,6 +12,7 @@ board_size = parameters.board_size
 
 window_size = 600
 frame_rate = 30
+square_size = window_size//board_size
 
 class PygamePlayer:
     def __init__(self, agent_1='human', agent_2='human'):
@@ -50,6 +51,27 @@ class PygamePlayer:
 
         self.game = Quoridor()
 
+        self.first_click = None
+        self.second_click = None
+        self.playing = False
+        self.agent_clicked = [False, False]
+
+    def check_for_quit(self):
+        for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.playing = False
+                    pygame.quit()
+
+    def get_click_square(self):
+        pygame.event.pump()
+        events = pygame.event.get()
+        for event in events:
+            if event.type == pygame.MOUSEBUTTONUP:
+                pos = pygame.mouse.get_pos()
+                square_coordinate = np.array(list(pos))//square_size
+                return square_coordinate
+        return None
+
     def draw_board(self):
         for i in range(board_size):
             for j in range(board_size):
@@ -60,20 +82,28 @@ class PygamePlayer:
                     square_colour = (225,203,142)
                 else:
                     square_colour = (255,255,204)
-                pygame.draw.rect(win, square_colour, pygame.Rect((i*square_size,j*square_size), (square_size, square_size)))
+                pygame.draw.rect(self.win, square_colour, pygame.Rect((i*square_size,j*square_size), (square_size, square_size)))
 
                 circle_centre = (i*square_size + square_size//2, j*square_size + square_size//2)
                 if square_data[3] == 1:
-                    pygame.draw.circle(win, (100,0,0), circle_centre, square_size//3 + 5)
-                    pygame.draw.circle(win, (255,0,0), circle_centre, square_size//3)
+                    if self.agent_clicked[1] == True:
+                        colour = (255,100,0)
+                    else:
+                        colour = (255,0,0)
+                    pygame.draw.circle(self.win, (100,0,0), circle_centre, square_size//3 + 5)
+                    pygame.draw.circle(self.win, colour, circle_centre, square_size//3)
                 if square_data[2] == 1:
-                    pygame.draw.circle(win, (0,0,100), circle_centre, square_size//3 + 5)
-                    pygame.draw.circle(win, (0,0,255), circle_centre, square_size//3)
+                    if self.agent_clicked[0] == True:
+                        colour = (0,100,255)
+                    else:
+                        colour = (0,0,255)
+                    pygame.draw.circle(self.win, (0,0,100), circle_centre, square_size//3 + 5)
+                    pygame.draw.circle(self.win, colour, circle_centre, square_size//3)
 
                 if square_data[0] == 1:
-                    pygame.draw.rect(win, (51, 26, 0), pygame.Rect(((i)*square_size, (j+1)*square_size - 10), (square_size, 20)))
+                    pygame.draw.rect(self.win, (51, 26, 0), pygame.Rect(((i)*square_size, (j+1)*square_size - 10), (square_size, 20)))
                 if square_data[1] == 1:
-                    pygame.draw.rect(win, (51, 26, 0), pygame.Rect(((i+1)*square_size-10, (j)*square_size), (20, square_size)))
+                    pygame.draw.rect(self.win, (51, 26, 0), pygame.Rect(((i+1)*square_size-10, (j)*square_size), (20, square_size)))
 
 
     def human_move(self):
@@ -81,7 +111,39 @@ class PygamePlayer:
         """
         Handles human moves through the command line. Returns the move.
         """
-        raise NotImplementedError()
+        waiting_for_legal_move = True
+        while waiting_for_legal_move:
+            waiting_for_first_click = True
+            while waiting_for_first_click:
+                click_coordinate = np.flip(self.get_click_square())
+                self.check_for_quit()
+                if click_coordinate is not None:
+                    self.first_click = click_coordinate
+                    #self.clock.tick(frame_rate)
+                    if (self.game.players[self.game.moving_now].pos == click_coordinate).all():
+                        waiting_for_first_click = False
+                        self.agent_clicked[self.game.moving_now] = True
+                        self.draw_board()
+                        pygame.display.update()
+
+            waiting_for_second_click = True
+            while waiting_for_second_click:
+                click_coordinate = np.flip(self.get_click_square())
+                self.check_for_quit()
+                if click_coordinate is not None:
+                    self.second_click = click_coordinate
+                    #self.clock.tick(frame_rate)
+                    waiting_for_second_click = False
+
+            move_loc = self.first_click
+            move_direction = -(self.first_click - self.second_click)
+            move = np.concatenate([move_direction, np.array([0., 0., 0., 0.])])
+            legal = check_input_move_legal(move)
+            if legal:
+                waiting_for_legal_move = False
+        self.agent_clicked = [False, False]
+        return move
+
 
 
     def play(self):
@@ -91,9 +153,10 @@ class PygamePlayer:
         """
 
         self.draw_board()
+        pygame.display.update()
 
-        playing = True
-        while self.game.playing:
+        self.playing = True
+        while self.playing:
             get_printable_board(self.game.board, self.game.players[0].walls, self.game.players[1].walls)
             if self.game.moving_now == 0:
                 if self.agent_1_input == 'human':
@@ -126,6 +189,9 @@ class PygamePlayer:
                     print('bot move {}'.format(move))
 
             new_state, playing, winner, reward, legal = self.game.move(move)
+            self.draw_board()
+            pygame.display.update()
+            self.agent_clicked = [False, False]
 
             if not self.game.playing:
                 get_printable_board(self.game.board, self.game.players[0].walls, self.game.players[1].walls)

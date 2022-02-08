@@ -1,22 +1,22 @@
 class Parameters:
     def __init__(self):
-        self.board_size = 9
-        self.number_of_walls = 10
+        self.board_size = 5
+        self.number_of_walls = 5
         self.bot_in_dimension = ((self.board_size**2)*4 + 2*(self.number_of_walls+1))
         self.bot_out_dimension = 4 + 2 * (self.board_size - 1)**2
 
         self.illegal_move_reward = -10/400
-        self.legal_move_reward = 1/400
+        self.legal_move_reward = 0
         self.win_reward = 100/100
 
         self.max_rounds_per_game = 40
 
-        self.actor_num_hidden = 3
-        self.actor_size_hidden = 256
-        self.critic_num_hidden = 3
-        self.critic_size_hidden = 256
+        self.actor_num_hidden = 2
+        self.actor_size_hidden = 128
+        self.critic_num_hidden = 2
+        self.critic_size_hidden = 128
 
-        self.epsilon = 0.9
+        self.epsilon = 0.07
         self.epsilon_decay = 0.985
         self.move_prob = 0.4
         self.forward_prob = 0.4
@@ -28,11 +28,11 @@ class Parameters:
         self.actor_learning_rate = 0.0004
         self.critic_learning_rate = 0.001
 
-        self.minimum_epsilon = 0.1
-        self.minimum_move_prob = 0.5
+        self.minimum_epsilon = 0.07
+        self.minimum_move_prob = 0.4
         self.cut_at_random_move = True
 
-        self.random_proportion = 0.6
+        self.random_proportion = 0.8
 
         self.games_per_iter = 5
 
