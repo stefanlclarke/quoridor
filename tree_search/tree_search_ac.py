@@ -20,12 +20,27 @@ else:
 
 class ACTreeSearch(TreeSearch):
     def __init__(self, net, actor, search_depth=3, number_checks=3, controlling=2, max_prob_check=None):
+        """
+        Class for carrying out a tree-search using the actor-critic setup.
+
+        The actor chooses moves to continue the tree. The values of the critic are used in a
+        minimax-type way to determine the best move.
+        """
+
         super().__init__(search_depth, number_checks, controlling)
         self.net = net
         self.actor = actor
         self.max_prob_check = max_prob_check
 
     def check_iter(self, game):
+        """
+        One iteration of the tree-search. See superclass for more details.
+
+        Returns:
+        legal_moves: children to add to the current node.
+        values: a list of move-values for the moves in legal_moves.
+        """
+
         copy_game = game
 
         to_move = copy_game.moving_now

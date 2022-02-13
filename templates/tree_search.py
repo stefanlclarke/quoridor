@@ -43,6 +43,7 @@ class TreeSearch(QuoridoorAgent):
         self.controlled_player = controlling - 1
         self.possible_moves = possible_moves
 
+
     def check_iter(self, game):
         raise NotImplementedError()
 

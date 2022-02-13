@@ -5,7 +5,7 @@ from tree_search.tree_search_minimax import MMTreeSearch
 from tree_search.tree_search_ac import ACTreeSearch
 
 actor = Actor()
-net = QNetBot('3x128_9x9_4Feb66')
-tree = ACTreeSearch(net.net, actor, 4, 4, max_prob_check=0.4)
-game = CommandLinePlayer(agent_2=tree)
+net = QNetBot('2x128_5x5_8Feb309')
+tree = MMTreeSearch(net.net, 4, 2, min_value=-0.5, check_shortest_path=True, controlling=1)
+game = CommandLinePlayer(agent_1=tree, agent_2='human')
 game.play()

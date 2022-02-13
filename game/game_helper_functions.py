@@ -198,6 +198,8 @@ def check_input_move_legal(move):
         return False
     if np.linalg.norm(wall_orientation) > 1:
         return False
+    if np.linalg.norm(move) == 0:
+        return False
     return True
 
 def flip_board(board, player_1_loc, player_2_loc):

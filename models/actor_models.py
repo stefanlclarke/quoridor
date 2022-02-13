@@ -14,6 +14,13 @@ input_dim = parameters.bot_in_dimension
 actor_output_dim = parameters.bot_out_dimension
 
 class Actor(NN):
+    """
+    Actor class for trainng using an actor-critic algorithm (to be used with a
+    Q-network as a critic).
+
+    save_name: name of the save file to be loaded.
+    """
+
     def __init__(self, save_name = None):
         self.input_size = input_dim
         super().__init__(self.input_size, actor_size_hidden, actor_num_hidden, actor_output_dim)

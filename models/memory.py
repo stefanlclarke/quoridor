@@ -5,6 +5,8 @@ class Memory:
     def __init__(self, number_other_info=0):
         """
         Class used to save information about Quoridoor games to memory.
+
+        number_other_info: number of additional values to be saved at each iteration.
         """
 
         self.states = []
