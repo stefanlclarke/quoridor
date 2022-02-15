@@ -13,8 +13,8 @@ class Parameters:
 
         self.actor_num_hidden = 2
         self.actor_size_hidden = 128
-        self.critic_num_hidden = 2
-        self.critic_size_hidden = 128
+        self.critic_num_hidden = 3
+        self.critic_size_hidden = 256
 
         self.epsilon = 0.07
         self.epsilon_decay = 0.985
