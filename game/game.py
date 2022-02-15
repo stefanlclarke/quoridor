@@ -1,7 +1,7 @@
 import numpy as np
 import copy
 import time
-from game.game_helper_functions import *
+from game.game_helper_functions_parallel import *
 from parameters import Parameters
 from game.printing import get_printable_board
 

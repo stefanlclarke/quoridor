@@ -45,3 +45,7 @@ class Memory:
         self.rewards = []
         self.off_policy = []
         self.other_info = [[] for _ in range(self.number_other_info)]
+
+    def combine(self, other_memory):
+        for game in other_memory.game_log:
+            self.game_log.append(game)
