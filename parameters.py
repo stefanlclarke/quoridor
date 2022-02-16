@@ -1,7 +1,7 @@
 class Parameters:
     def __init__(self):
-        self.board_size = 5
-        self.number_of_walls = 5
+        self.board_size = 9
+        self.number_of_walls = 10
         self.bot_in_dimension = ((self.board_size**2)*4 + 2*(self.number_of_walls+1))
         self.bot_out_dimension = 4 + 2 * (self.board_size - 1)**2
 
@@ -16,7 +16,7 @@ class Parameters:
         self.critic_num_hidden = 3
         self.critic_size_hidden = 256
 
-        self.epsilon = 0.07
+        self.epsilon = 0.99
         self.epsilon_decay = 0.985
         self.move_prob = 0.4
         self.forward_prob = 0.4

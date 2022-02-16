@@ -6,6 +6,7 @@ from game.printing import get_printable_board
 from parameters import Parameters
 from game.move_reformatter import move_reformatter
 import pygame
+import sys
 
 parameters = Parameters()
 board_size = parameters.board_size
@@ -67,6 +68,7 @@ class PygamePlayer:
                 if event.type == pygame.QUIT:
                     self.playing = False
                     pygame.quit()
+                    sys.exit()
 
     def get_click_square(self):
         """

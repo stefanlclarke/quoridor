@@ -73,7 +73,11 @@ class TreeSearch(QuoridoorAgent):
             flip = True
         state = copy_game.get_state(flatten=True, flip=flip)
 
-        values, legal_moves = self.check_iter(copy_game)
+        if copy_game.winner == 0:
+            values, legal_moves = self.check_iter(copy_game)
+        else:
+            values = []
+            legal_moves = []
 
         if len(values) == 0:
             search_dict[sequence_to_expand.tobytes()] = -1.
