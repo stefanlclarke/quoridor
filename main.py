@@ -4,12 +4,11 @@ from models.q_models import QNetBot
 from models.actor_models import Actor
 import time
 
-pretrained_qnet = QNetBot('2x128_5x5_27jan349')
-trainer = QTrainer(net=pretrained_qnet.net)
+trainer = QTrainer()
 get_time_info = False
 
 t0 = time.time()
-trainer.train(1000000000, 200, '2x128_5x5_8Feb', get_time_info=get_time_info)
+trainer.train(1000000000, 200, '3x256_9x9_16Feb', get_time_info=get_time_info)
 t1 = time.time()
 
 if get_time_info:
