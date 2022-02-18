@@ -1,3 +1,5 @@
+import numpy as np
+
 class Parameters:
     def __init__(self):
         self.board_size = 9
@@ -16,7 +18,7 @@ class Parameters:
         self.critic_num_hidden = 3
         self.critic_size_hidden = 256
 
-        self.epsilon = 0.99
+        self.epsilon = 0.
         self.epsilon_decay = 0.985
         self.move_prob = 0.4
         self.forward_prob = 0.4
@@ -38,3 +40,9 @@ class Parameters:
 
         self.max_grad_norm = 1.
         self.entropy_constant = 1.
+
+        self.wolp_k = 4
+
+        self.possible_moves = [np.zeros(self.bot_out_dimension) for _ in range(self.bot_out_dimension)]
+        for i in range(self.bot_out_dimension):
+            self.possible_moves[i][i] = 1

@@ -1,9 +1,10 @@
 import numpy as np
 import copy
 import time
-from game.game_helper_functions import *
+from game.fast_game_helper_functions import *
 from parameters import Parameters
 from game.printing import get_printable_board
+from game.graph_search import BoardGraph
 
 parameters = Parameters()
 board_size = parameters.board_size
@@ -39,6 +40,8 @@ class Quoridor:
         self.playing = True
         self.start_walls = parameters.number_of_walls
         self.winner = 0
+        self.board_graph = BoardGraph()
+        self.copy_board_graph = BoardGraph()
 
     def move(self, command, get_time_info=False):
         moving = 0.
@@ -67,9 +70,17 @@ class Quoridor:
                 self.players[self.moving_now].pos = move_command + player_moving_pos
 
         if player_moving.walls > 0:
-                legal_wall = place_wall_with_check(self.board, wall_pos_command, wall_orientation_command, self.players[0].pos, self.players[1].pos)
-                if legal_wall:
-                    player_moving.walls -= 1
+            self.copy_board_graph.copy_graph(self.board_graph)
+            try:
+                legal_wall = place_wall_with_check(self.board, wall_pos_command, wall_orientation_command, self.players[0].pos, self.players[1].pos, self.copy_board_graph)
+            except:
+                self.print()
+            if legal_wall:
+                player_moving.walls -= 1
+                self.board_graph.wall_placement(wall_pos_command, wall_orientation_command)
+                #self.board_graph.plot()
+                #self.board_graph.player_plot(0)
+                #self.board_graph.player_plot(1)
         else:
             legal_wall = False
 
@@ -175,9 +186,11 @@ class Quoridor:
                 orientation = np.array([0.,1.])
             else:
                 orientation = np.array([1.,0.])
-            legal = place_wall_with_check(self.board, loc, orientation, self.players[0].pos, self.players[1].pos)
+            self.copy_board_graph.copy_graph(self.board_graph)
+            legal = place_wall_with_check(self.board, loc, orientation, self.players[0].pos, self.players[1].pos, self.copy_board_graph)
             if legal:
                 self.players[0].walls -= 1
+                self.board_graph.wall_placement(loc, orientation)
 
         for i in range(number_of_walls_from_2):
             loc = np.array([np.random.choice(self.board_size), np.random.choice(self.board_size)])
@@ -186,6 +199,8 @@ class Quoridor:
                 orientation = np.array([0.,1.])
             else:
                 orientation = np.array([1.,0.])
-            legal = place_wall_with_check(self.board, loc, orientation, self.players[0].pos, self.players[1].pos)
+            self.copy_board_graph.copy_graph(self.board_graph)
+            legal = place_wall_with_check(self.board, loc, orientation, self.players[0].pos, self.players[1].pos, self.copy_board_graph)
             if legal:
                 self.players[1].walls -= 1
+                self.board_graph.wall_placement(loc, orientation)

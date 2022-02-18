@@ -3,7 +3,7 @@ from parameters import Parameters
 import numpy as np
 from models.memory import Memory
 from game.move_reformatter import *
-from game.shortest_path import ShortestPathBot
+from game.fast_shortest_path import ShortestPathBot
 import time
 
 parameters = Parameters()
@@ -19,7 +19,7 @@ class Trainer:
         self.game = Quoridor()
         self.memory_1 = Memory(number_other_info=number_other_info)
         self.memory_2 = Memory(number_other_info=number_other_info)
-        self.spbots = [ShortestPathBot(1), ShortestPathBot(2)]
+        self.spbots = [ShortestPathBot(1, self.game.board_graph), ShortestPathBot(2, self.game.board_graph)]
 
         self.possible_moves = [np.zeros(parameters.bot_out_dimension) for _ in range(parameters.bot_out_dimension)]
         for i in range(parameters.bot_out_dimension):
@@ -85,7 +85,7 @@ class Trainer:
                 on_policy_time += t1 - t0
 
             if rounds > parameters.max_rounds_per_game:
-                unformatted_move = self.spbots[player-1].move(self.game.get_state(flatten=False)[0])
+                unformatted_move = self.spbots[player-1].move(self.game.get_state(flatten=False)[0], self.game.board_graph)
                 move_ind = unformatted_move_to_index(unformatted_move, flip=flip)
                 move = np.zeros(parameters.bot_out_dimension)
                 move[move_ind] = 1
