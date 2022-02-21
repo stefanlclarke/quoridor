@@ -5,11 +5,12 @@ from models.q_models import QNetBot
 from models.actor_models import Actor
 import time
 
-trainer = ACTrainer()
+net = QNetBot('3x256_9x9_16Feb224', good=True)
+trainer = ACTrainer(qnet=net.net)
 get_time_info = True
 
 t0 = time.time()
-time_playing, time_learning, game_processing_time, on_policy_time, off_policy_time, moving_time, illegal_move_handling_time, checking_winner_time, wall_handling_time = trainer.train(10, 10, 'ac_test', get_time_info=get_time_info)
+time_playing, time_learning, game_processing_time, on_policy_time, off_policy_time, moving_time, illegal_move_handling_time, checking_winner_time, wall_handling_time = trainer.train(10000000, 300, '3x256_9x9_21Feb_AC', get_time_info=get_time_info)
 t1 = time.time()
 
 if get_time_info:
