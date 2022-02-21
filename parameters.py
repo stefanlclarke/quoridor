@@ -34,7 +34,7 @@ class Parameters:
         self.minimum_move_prob = 0.4
         self.cut_at_random_move = True
 
-        self.random_proportion = 0.8
+        self.random_proportion = 0.
 
         self.games_per_iter = 5
 
@@ -42,6 +42,7 @@ class Parameters:
         self.entropy_constant = 1.
 
         self.wolp_k = 4
+        self.ppo_epsilon = 0.2
 
         self.possible_moves = [np.zeros(self.bot_out_dimension) for _ in range(self.bot_out_dimension)]
         for i in range(self.bot_out_dimension):

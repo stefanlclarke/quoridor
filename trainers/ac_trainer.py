@@ -10,7 +10,7 @@ import torch.optim as optim
 from game.game_helper_functions import *
 from loss_functions.sarsa_loss import sarsa_loss
 from game.shortest_path import *
-from loss_functions.actor_loss import actor_loss
+from loss_functions.ppo_loss import actor_loss
 from templates.trainer import Trainer
 
 if torch.cuda.is_available():

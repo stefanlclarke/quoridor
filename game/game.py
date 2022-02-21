@@ -1,7 +1,7 @@
 import numpy as np
 import copy
 import time
-from game.fast_game_helper_functions import *
+from game.game_helper_functions import *
 from parameters import Parameters
 from game.printing import get_printable_board
 from game.graph_search import BoardGraph
@@ -164,6 +164,7 @@ class Quoridor:
         self.num_players = len(self.players)
         self.moving_now = other_game.moving_now
         self.playing = other_game.playing
+        self.board_graph.copy_graph(other_game.board_graph)
 
     def copy_board(self, board, player_1_loc, player_2_loc, player_1_walls, player_2_walls):
         self.board = copy.copy(board)

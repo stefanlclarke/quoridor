@@ -123,7 +123,7 @@ def check_both_players_can_reach_end(board, player_1_loc, player_2_loc):
         return False
     return True
 
-def check_wall_placement_legal(board, loc, orientation, player_1_loc, player_2_loc):
+def check_wall_placement_legal(board, loc, orientation, player_1_loc, player_2_loc, board_graph_copy):
     if (loc < 0).any() or (loc >= board_size - 1).any():
         return False
 
@@ -142,10 +142,8 @@ def check_wall_placement_legal(board, loc, orientation, player_1_loc, player_2_l
         if board[int(loc[0]), int(loc[1]), 1] == 1 and board[int(loc[0])+1, int(loc[1]), 1] == 1:
             return False
 
-    new_board = copy.deepcopy(board)
-
-    place_wall(new_board, loc, orientation)
-    end = check_both_players_can_reach_end(new_board, player_1_loc, player_2_loc)
+    board_graph_copy.wall_placement(loc, orientation)
+    end = board_graph_copy.check_both_players_can_reach_end(player_1_loc, player_2_loc)
     if not end:
         return False
 
@@ -163,10 +161,10 @@ def place_wall(board, loc, orientation):
     else:
         raise ValueError('invalid command')
 
-def place_wall_with_check(board, loc, orientation, player_1_loc, player_2_loc):
+def place_wall_with_check(board, loc, orientation, player_1_loc, player_2_loc, board_graph_copy):
     if np.linalg.norm(orientation) == 0:
         return False
-    legal = check_wall_placement_legal(board, loc, orientation, player_1_loc, player_2_loc)
+    legal = check_wall_placement_legal(board, loc, orientation, player_1_loc, player_2_loc, board_graph_copy)
     if legal:
         place_wall(board, loc, orientation)
         return True

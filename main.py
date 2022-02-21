@@ -9,7 +9,7 @@ trainer = ACTrainer()
 get_time_info = True
 
 t0 = time.time()
-time_playing, time_learning, game_processing_time, on_policy_time, off_policy_time, moving_time, illegal_move_handling_time, checking_winner_time, wall_handling_time = trainer.train(10, 10, 'wolpertinger_test', get_time_info=get_time_info)
+time_playing, time_learning, game_processing_time, on_policy_time, off_policy_time, moving_time, illegal_move_handling_time, checking_winner_time, wall_handling_time = trainer.train(10, 10, 'ac_test', get_time_info=get_time_info)
 t1 = time.time()
 
 if get_time_info:
