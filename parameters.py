@@ -2,8 +2,8 @@ import numpy as np
 
 class Parameters:
     def __init__(self):
-        self.board_size = 9
-        self.number_of_walls = 10
+        self.board_size = 7
+        self.number_of_walls = 7
         self.bot_in_dimension = ((self.board_size**2)*4 + 2*(self.number_of_walls+1))
         self.bot_out_dimension = 4 + 2 * (self.board_size - 1)**2
 

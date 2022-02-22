@@ -9,6 +9,7 @@ from optimizers.shared_adam import SharedAdam
 from trainers.q_worker import QWorker
 import torch.multiprocessing as mp
 from torch.multiprocessing import Pool, Process, set_start_method
+import torch
 
 try:
      set_start_method('spawn')
