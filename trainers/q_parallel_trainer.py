@@ -32,12 +32,12 @@ class ParallelTrainer:
         self.save_freq = save_freq
         self.reset_workers()
 
-    def reset_workers(self):
+    def reset_workers(self, worker_it=1):
         self.res_queue = mp.Queue()
-        self.workers = [QWorker(self.optimizer, self.res_queue, self.critic, iterations=self.iterations_per_worker) for _ in range(self.number_workers)]
+        self.workers = [QWorker(self.optimizer, self.res_queue, self.critic, iterations=self.iterations_per_worker, worker_it=worker_it) for _ in range(self.number_workers)]
 
     def train(self, number_iterations):
-        for _ in range(number_iterations):
+        for i in range(number_iterations):
             [w.start() for w in self.workers]
             res = []
             while True:
@@ -47,9 +47,9 @@ class ParallelTrainer:
                     break
             [w.join() for w in self.workers]
             [w.terminate() for w in self.workers]
-            self.reset_workers()
+            self.reset_workers(worker_it=i)
 
-            if _ % self.save_freq == 0:
+            if i % self.save_freq == 0:
                 self.save(self.save_name)
 
     def save(self, name, j):

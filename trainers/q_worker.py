@@ -33,7 +33,7 @@ max_grad_norm = parameters.max_grad_norm
 
 
 class QWorker(mp.Process, QTrainer):
-    def __init__(self, global_optimizer, res_queue, global_qnet, iterations=1):
+    def __init__(self, global_optimizer, res_queue, global_qnet, iterations=1, worker_it=1):
         """
         Handles the training of an actor and a Q-network using an actor
         critic algorithm. Used in multiprocessing.
@@ -50,6 +50,7 @@ class QWorker(mp.Process, QTrainer):
 
         self.res_queue = res_queue
         self.iterations = iterations
+        self.worker_it = worker_it
 
     def push(self):
 
@@ -75,7 +76,7 @@ class QWorker(mp.Process, QTrainer):
 
     def run(self):
         for i in range(self.iterations):
-            self.play_game()
+            self.play_game(info=[self.worker_it])
             print('completed a game')
             self.log_memories()
             self.push()

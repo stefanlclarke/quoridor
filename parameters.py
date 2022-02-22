@@ -18,7 +18,7 @@ class Parameters:
         self.critic_num_hidden = 3
         self.critic_size_hidden = 256
 
-        self.epsilon = 0.
+        self.epsilon = 0.9
         self.epsilon_decay = 0.985
         self.move_prob = 0.4
         self.forward_prob = 0.4
