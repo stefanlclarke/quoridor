@@ -42,7 +42,6 @@ class ParallelTrainer:
             res = []
             while True:
                 r = self.res_queue.get()
-                print(r)
                 if r is None:
                     break
             [w.join() for w in self.workers]
@@ -50,7 +49,7 @@ class ParallelTrainer:
             self.reset_workers(worker_it=i)
 
             if i % self.save_freq == 0:
-                self.save(self.save_name)
+                self.save(self.save_name, i)
 
     def save(self, name, j):
         """

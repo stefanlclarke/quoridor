@@ -34,7 +34,7 @@ class Parameters:
         self.minimum_move_prob = 0.4
         self.cut_at_random_move = True
 
-        self.random_proportion = 0.
+        self.random_proportion = 0.7
 
         self.games_per_iter = 1
 
