@@ -36,7 +36,7 @@ class Parameters:
 
         self.random_proportion = 0.
 
-        self.games_per_iter = 5
+        self.games_per_iter = 1
 
         self.max_grad_norm = 1.
         self.entropy_constant = 1.
