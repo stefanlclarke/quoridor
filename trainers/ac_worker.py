@@ -99,6 +99,7 @@ class ACWorker(mp.Process, ACTrainer):
     def run(self):
         for _ in range(self.iterations):
             self.play_game()
+            print('completed a game')
             self.log_memories()
             self.push()
             self.actor.pull(self.global_actor)
