@@ -25,3 +25,6 @@ class NN(nn.Module):
             y = self.relu(layer(y))
         output = self.output_layer(y)
         return output
+
+    def pull(self, model):
+        self.load_state_dict(model.state_dict())

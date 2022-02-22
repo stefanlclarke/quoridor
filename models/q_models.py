@@ -26,6 +26,9 @@ class QNet(NN):
     def forward(self, x):
         return self.feed_forward(x)
 
+    def pull(self, model):
+        self.load_state_dict(model.state_dict())
+
 class QNetBot(QuoridoorAgent):
 
     def __init__(self, save_name, good=False):
