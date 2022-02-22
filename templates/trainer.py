@@ -181,6 +181,7 @@ class Trainer:
                     t0 = time.time()
                 for k in range(games_per_iter):
                     game_time, on_time, off_time, m_time, ill_time, cw_time, wh_time = self.play_game(info=[j, i, k])
+                    print('completed a game')
                     self.log_memories()
                     if get_time_info:
                         game_processing_time += game_time
