@@ -77,6 +77,7 @@ class QWorker(mp.Process, QTrainer):
     def run(self):
         for i in range(self.iterations):
             self.play_game(info=[self.worker_it])
+            print('played a game')
             self.log_memories()
             self.push()
             self.net.pull(self.global_net)
