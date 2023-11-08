@@ -7,8 +7,10 @@ import torch.multiprocessing as mp
 
 if torch.cuda.is_available():
     device = 'cuda:0'
+    print('using cuda!')
 else:
     device = 'cpu'
+    print('using CPU!')
 
 parameters = Parameters()
 gamma = parameters.gamma
@@ -25,7 +27,7 @@ max_grad_norm = parameters.max_grad_norm
 
 
 class QWorker(mp.Process, QTrainer):
-    def __init__(self, global_optimizer, res_queue, global_qnet, iterations=1, worker_it=1,
+    def __init__(self, global_optimizer, res_queue, global_qnet, iterations=1, worker_it=1, games_per_worker=8,
                  stat_storage=None, net=None, convolutional=False):
         """
         Handles the training of an actor and a Q-network using an actor
@@ -50,6 +52,7 @@ class QWorker(mp.Process, QTrainer):
 
         self.n_games_played = 0
         self.stat_storage = stat_storage
+        self.n_games_per_worker = games_per_worker
 
     def push(self):
 
@@ -77,11 +80,12 @@ class QWorker(mp.Process, QTrainer):
 
     def run(self):
         for i in range(self.iterations):
-            self.play_game(info=[self.worker_it])
-            self.stat_storage.n_games_played += 1
-            self.log_memories()
+            for j in range(self.n_games_per_worker):
+                self.play_game(info=[self.worker_it])
+                self.stat_storage.n_games_played += 1
+                self.log_memories()
             loss = self.push()
             self.net.pull(self.global_net)
             self.reset_memories()
-            self.res_queue.put([i, loss])
+            self.res_queue.put([i * j, loss])
         self.res_queue.put([None, loss])

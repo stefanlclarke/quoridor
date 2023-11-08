@@ -4,7 +4,7 @@ import time
 import torch.multiprocessing as mp
 
 iterations_per_worker = 4
-save_freq = 10
+save_freq = 100
 n_epochs = 1000000
 convolutional = False
 
@@ -15,10 +15,10 @@ if __name__ == '__main__':
     print(f'I am using {cpus} CPUs')
 
     if convolutional:
-        critic = QNetConv()
+        critic = QNetConv('3x256_5x5_7Nov_conv14670')
     else:
         critic = QNet()
-    trainer = ParallelTrainer(cpus, critic, '3x256_5x5_7Nov_conv1', iterations_per_worker=iterations_per_worker,
+    trainer = ParallelTrainer(cpus, critic, '3x256_5x5_8Nov_conv', iterations_per_worker=iterations_per_worker,
                               save_freq=save_freq, convolutional=convolutional)
 
     trainer.train(n_epochs)
