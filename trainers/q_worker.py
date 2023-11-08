@@ -7,10 +7,8 @@ import torch.multiprocessing as mp
 
 if torch.cuda.is_available():
     device = 'cuda:0'
-    print('using cuda!')
 else:
     device = 'cpu'
-    print('using CPU!')
 
 parameters = Parameters()
 gamma = parameters.gamma

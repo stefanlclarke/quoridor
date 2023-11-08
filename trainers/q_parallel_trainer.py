@@ -40,25 +40,46 @@ class ParallelTrainer:
                         for _ in range(self.number_workers)]
 
     def train(self, number_iterations):
+
+        # for tracking results
         print('{}\t\t{}\t\t{}'.format('epoch', 'loss', 'num games played'))
         n_games_played = 0
+
+        # loop over iterations
         for i in range(number_iterations):
+
+            # start all workers
             [w.start() for w in self.workers]
+
+            # tracking loss and number of plays
             n_sample = 0
             avg_loss = 0
             while True:
+
+                # get from the queue
                 r = self.res_queue.get()
                 avg_loss += r[1]
                 n_sample += 1
+
+                # if any process has finished stop
                 if r[0] is None:
                     break
+
+            # join the workers
             [w.join() for w in self.workers]
+
+            # terminate the workers
             [w.terminate() for w in self.workers]
+
+            # reset the workers
             self.reset_workers(worker_it=i)
+
+            # get loss and print
             avg_loss = avg_loss / n_sample
             n_games_played += n_sample
             print_iteration(i, avg_loss, n_games_played)
 
+            # save if we reach saving iteration
             if i % self.save_freq == 0:
                 self.save(self.save_name, i)
 

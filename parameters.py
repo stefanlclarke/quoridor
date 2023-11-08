@@ -58,3 +58,5 @@ class Parameters:
         self.sidelen = self.board_size
         self.conv_internal_channels = 8
         self.num_conv = 2
+        self.convolutional = True
+        self.n_cores = 4
