@@ -2,9 +2,9 @@ import numpy as np
 import copy
 import time
 from game.game_helper_functions import move_piece, place_wall_with_check, check_win, get_legal_moves, flip_board
-from game.graph_search import BoardGraph
 from parameters import Parameters
 from game.printing import get_printable_board
+from game.graph_search import BoardGraph
 
 parameters = Parameters()
 BOARD_SIZE = parameters.board_size
@@ -70,7 +70,7 @@ class Quoridor:
         # keeps track of the winner
         self.winner = 0
 
-        # board and copy of the board stored in graph form (to be added later)
+        # board and copy of the board stored in graph form
         self.board_graph = BoardGraph()
         self.copy_board_graph = BoardGraph()
 

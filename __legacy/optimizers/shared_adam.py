@@ -5,9 +5,7 @@ if torch.cuda.is_available():
 else:
     device = 'cpu'
 
-
-# extend a pytorch optimizer so it shares grads across processes
-class SharedAdam(torch.optim.Adam): 
+class SharedAdam(torch.optim.Adam): # extend a pytorch optimizer so it shares grads across processes
     def __init__(self, params, lr=1e-3, betas=(0.9, 0.999), eps=1e-8, weight_decay=0):
         super(SharedAdam, self).__init__(params, lr, betas, eps, weight_decay)
         for group in self.param_groups:
@@ -20,8 +18,7 @@ class SharedAdam(torch.optim.Adam):
         def step(self, closure=None):
             for group in self.param_groups:
                 for p in group['params']:
-                    if p.grad is None: 
-                        continue
+                    if p.grad is None: continue
                     self.state[p]['shared_steps'] += 1
-                    self.state[p]['step'] = self.state[p]['shared_steps'][0] - 1
+                    self.state[p]['step'] = self.state[p]['shared_steps'][0] - 1 # a "step += 1"  comes later
             super.step(closure)

@@ -1,8 +1,16 @@
+import numpy as np
 import torch
 from parameters import Parameters
+from models.q_models import QNet
+import torch.nn as nn
+from game.move_reformatter import move_reformatter, unformatted_move_to_index
+import copy
+import torch.optim as optim
+from game.game_helper_functions import *
 from loss_functions.sarsa_loss import sarsa_loss
+from game.shortest_path import *
+from loss_functions.ppo_loss import actor_loss
 from trainers.qtrainer import QTrainer
-from models.q_models import QNetConv
 import torch.multiprocessing as mp
 
 if torch.cuda.is_available():
@@ -25,17 +33,13 @@ max_grad_norm = parameters.max_grad_norm
 
 
 class QWorker(mp.Process, QTrainer):
-    def __init__(self, global_optimizer, res_queue, global_qnet, iterations=1, worker_it=1,
-                 stat_storage=None, net=None, convolutional=False):
+    def __init__(self, global_optimizer, res_queue, global_qnet, iterations=1, worker_it=1):
         """
         Handles the training of an actor and a Q-network using an actor
         critic algorithm. Used in multiprocessing.
         """
-        if convolutional:
-            net = QNetConv()
-
         mp.Process.__init__(self)
-        QTrainer.__init__(self, net=net)
+        QTrainer.__init__(self)
 
         self.global_net = global_qnet.to(device)
 
@@ -48,19 +52,14 @@ class QWorker(mp.Process, QTrainer):
         self.iterations = iterations
         self.worker_it = worker_it
 
-        self.n_games_played = 0
-        self.stat_storage = stat_storage
-
     def push(self):
 
         """
         Calculates loss and does backpropagation.
         """
 
-        critic_p1_loss, advantage_1 = sarsa_loss(self.memory_1, self.net, 0, self.possible_moves, printing=False,
-                                                 return_advantage=True)
-        critic_p2_loss, advantage_2 = sarsa_loss(self.memory_2, self.net, 0, self.possible_moves, printing=False,
-                                                 return_advantage=True)
+        critic_p1_loss, advantage_1 = sarsa_loss(self.memory_1, self.net, 0, self.possible_moves, printing=False, return_advantage=True)
+        critic_p2_loss, advantage_2 = sarsa_loss(self.memory_2, self.net, 0, self.possible_moves, printing=False, return_advantage=True)
         critic_loss = critic_p1_loss + critic_p2_loss
 
         self.optimizer.zero_grad()
@@ -78,10 +77,10 @@ class QWorker(mp.Process, QTrainer):
     def run(self):
         for i in range(self.iterations):
             self.play_game(info=[self.worker_it])
-            self.stat_storage.n_games_played += 1
+            print('played a game')
             self.log_memories()
-            loss = self.push()
+            self.push()
             self.net.pull(self.global_net)
             self.reset_memories()
-            self.res_queue.put([i, loss])
-        self.res_queue.put([None, loss])
+            self.res_queue.put(i)
+        self.res_queue.put(None)

@@ -2,7 +2,7 @@ from game.game import Quoridor
 from parameters import Parameters
 import numpy as np
 from models.memory import Memory
-from game.move_reformatter import unformatted_move_to_index, move_reformatter
+from game.move_reformatter import *
 from game.shortest_path import ShortestPathBot
 import time
 
@@ -10,28 +10,17 @@ parameters = Parameters()
 games_per_iter = parameters.games_per_iter
 random_proportion = parameters.random_proportion
 
-
 class Trainer:
     def __init__(self, number_other_info=2):
         """
         Template class for training AI on Quoridor.
-
-        inputs:
-            number_other_info: int
-                the amount of information stored at each iteration (on top of default)
         """
 
-        # define game
         self.game = Quoridor()
-
-        # define memory for each bot
         self.memory_1 = Memory(number_other_info=number_other_info)
         self.memory_2 = Memory(number_other_info=number_other_info)
-
-        # create shortest path bots (used if game times out)
         self.spbots = [ShortestPathBot(1, self.game.board_graph), ShortestPathBot(2, self.game.board_graph)]
-        
-        # stored list of possible moves which can be made
+
         self.possible_moves = [np.zeros(parameters.bot_out_dimension) for _ in range(parameters.bot_out_dimension)]
         for i in range(parameters.bot_out_dimension):
             self.possible_moves[i][i] = 1
@@ -55,7 +44,6 @@ class Trainer:
         raise NotImplementedError()
 
     def play_game(self, info=None, printing=False):
-
         """
         Plays a game and stores all relevant information to memory.
         The agents interact with the game through the off_policy_step and
@@ -63,8 +51,6 @@ class Trainer:
         When max_rounds_per_game is reached the game is played out using
         the shortest_path policy.
         """
-
-        # stores amount of time spent in each phase of handling the game
         game_processing_time = 0.
         on_policy_time = 0.
         off_policy_time = 0.
@@ -73,24 +59,15 @@ class Trainer:
         checking_winner_time = 0.
         wall_handling_time = 0.
 
-        # stores number of games played
         rounds = 0
-
-        # randomly decide whether to play the game from a random position or the start position
         unif = np.random.uniform()
         if unif < random_proportion:
             self.game.reset(random_positions=True)
         else:
             self.game.reset()
-
-        # start the game
         playing = True
         while playing:
-
-            # timer
             t0 = time.time()
-
-            # decide who is moving
             if self.game.moving_now == 0:
                 flip = False
                 player = 1
@@ -100,20 +77,15 @@ class Trainer:
                 player = 2
                 rounds += 1
                 memory = self.memory_2
-
-            # get the game state
             state = self.game.get_state(flip=flip)
 
-            # if max_rounds not yet reached allow the agent to play on policy
             if rounds <= parameters.max_rounds_per_game:
                 move, step_info, off_policy = self.on_policy_step(state, info)
                 t1 = time.time()
                 on_policy_time += t1 - t0
 
-            # if number of rounds has been reached play off-policy instead
             if rounds > parameters.max_rounds_per_game:
-                unformatted_move = self.spbots[player - 1].move(self.game.get_state(flatten=False)[0],
-                                                                self.game.board_graph)
+                unformatted_move = self.spbots[player-1].move(self.game.get_state(flatten=False)[0], self.game.board_graph)
                 move_ind = unformatted_move_to_index(unformatted_move, flip=flip)
                 move = np.zeros(parameters.bot_out_dimension)
                 move[move_ind] = 1
@@ -122,22 +94,15 @@ class Trainer:
                 t1 = time.time()
                 off_policy_time += t1 - t0
 
-            # print if necessary
             if printing:
                 print('current game state')
                 self.game.print()
-            # make the move
-            new_state, playing, winner, reward, legal, moving, illegal_move_handling, checking_winner, wall_handling \
-                = self.game.move(move_reformatter(move, flip=flip), get_time_info=True)
-
-            # print if necessary
+            new_state, playing, winner, reward, legal, moving, illegal_move_handling, checking_winner, wall_handling = self.game.move(move_reformatter(move, flip=flip), get_time_info=True)
             if printing:
                 print('player {} move {} legal {}'.format(player, move_reformatter(move, flip=flip), legal))
 
-            # save sate and move to memory
             memory.save(state, move, reward, off_policy, step_info)
 
-            # if someone has won end the game
             if winner != 0:
                 playing = False
                 if printing:
@@ -148,8 +113,6 @@ class Trainer:
                 if winner == 2:
                     self.memory_1.rewards[-1] = self.memory_1.rewards[-1] - parameters.win_reward
                     self.memory_2.rewards[-1] = self.memory_2.rewards[-1] + parameters.win_reward
-
-            # handle timing trackers
             t2 = time.time()
             game_processing_time += t2 - t1
             moving_time += moving
@@ -157,9 +120,7 @@ class Trainer:
             checking_winner_time += checking_winner
             wall_handling_time += wall_handling
 
-        # return the results (timings)
-        return game_processing_time, on_policy_time, off_policy_time, moving_time, illegal_move_handling_time, \
-            checking_winner_time, wall_handling_time
+        return game_processing_time, on_policy_time, off_policy_time, moving_time, illegal_move_handling_time, checking_winner_time, wall_handling_time
 
     def reset_memories(self):
         """
@@ -200,8 +161,6 @@ class Trainer:
         save_freq: saves every time this many iterations have passed
         name: name to save to.
         """
-
-        # define timing trackers
         time_playing = 0.
         time_learning = 0.
         game_processing_time = 0.
@@ -212,27 +171,18 @@ class Trainer:
         checking_winner_time = 0.
         wall_handling_time = 0.
 
-        # handle pre-train (this probably does nothing)
         self.handle_pre_training()
 
         losses = 0
-
-        # loop over iterations
-        for j in range(iterations // save_freq):
+        for j in range(iterations//save_freq):
             for i in range(save_freq):
                 self.reset_memories()
                 if get_time_info:
                     t0 = time.time()
-
-                # run as many games as desired
                 for k in range(games_per_iter):
                     game_time, on_time, off_time, m_time, ill_time, cw_time, wh_time = self.play_game(info=[j, i, k])
                     print('completed a game')
-
-                    # save memory
                     self.log_memories()
-
-                    # handle timing
                     if get_time_info:
                         game_processing_time += game_time
                         on_policy_time += on_time
@@ -243,24 +193,16 @@ class Trainer:
                         wall_handling_time += wh_time
                 if get_time_info:
                     t1 = time.time()
-
-                # do backpropagation
                 loss = self.learn()
                 losses += loss
-
-                # handle timing
                 if get_time_info:
                     t2 = time.time()
                     time_playing += t1 - t0
                     time_learning += t2 - t1
-
-            # save the model
             print('saving iteration {}'.format(j * save_freq))
-            print('loss {}'.format(loss / save_freq))
-            self.save(name, info=[j, i, k])
+            print('loss {}'.format(loss/save_freq))
+            self.save(name, info=[j,i,k])
             losses = 0
 
-        # if time info is requested return it
         if get_time_info:
-            return time_playing, time_learning, game_processing_time, on_policy_time, off_policy_time, moving_time, \
-                illegal_move_handling_time, checking_winner_time, wall_handling_time
+            return time_playing, time_learning, game_processing_time, on_policy_time, off_policy_time, moving_time, illegal_move_handling_time, checking_winner_time, wall_handling_time

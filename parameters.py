@@ -1,22 +1,28 @@
 import numpy as np
 
+
 class Parameters:
     def __init__(self):
-        self.board_size = 7
-        self.number_of_walls = 7
-        self.bot_in_dimension = ((self.board_size**2)*4 + 2*(self.number_of_walls+1))
+
+        """
+        A storage class for game parameters
+        """
+
+        self.board_size = 5
+        self.number_of_walls = 5
+        self.bot_in_dimension = ((self.board_size**2) * 4 + 2 * (self.number_of_walls + 1))
         self.bot_out_dimension = 4 + 2 * (self.board_size - 1)**2
 
-        self.illegal_move_reward = -10/400
+        self.illegal_move_reward = -10 / 400
         self.legal_move_reward = 0
-        self.win_reward = 100/100
+        self.win_reward = 100 / 100
 
         self.max_rounds_per_game = 40
 
         self.actor_num_hidden = 2
         self.actor_size_hidden = 128
         self.critic_num_hidden = 3
-        self.critic_size_hidden = 256
+        self.critic_size_hidden = 512
 
         self.epsilon = 0.9
         self.epsilon_decay = 0.985
@@ -47,3 +53,8 @@ class Parameters:
         self.possible_moves = [np.zeros(self.bot_out_dimension) for _ in range(self.bot_out_dimension)]
         for i in range(self.bot_out_dimension):
             self.possible_moves[i][i] = 1
+
+        # conv stuff
+        self.sidelen = self.board_size
+        self.conv_internal_channels = 8
+        self.num_conv = 2

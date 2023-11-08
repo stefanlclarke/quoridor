@@ -1,5 +1,5 @@
+import numpy as np
 import copy
-
 
 class Memory:
     def __init__(self, number_other_info=0):
@@ -33,10 +33,10 @@ class Memory:
 
     def log_game(self):
         data = [copy.deepcopy(self.states),
-                copy.deepcopy(self.actions),
-                copy.deepcopy(self.rewards),
-                copy.copy(self.off_policy),
-                copy.copy(self.other_info)]
+                    copy.deepcopy(self.actions),
+                    copy.deepcopy(self.rewards),
+                    copy.copy(self.off_policy),
+                    copy.copy(self.other_info)]
 
         self.game_log.append(data)
 
