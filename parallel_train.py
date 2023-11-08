@@ -5,8 +5,8 @@ from parameters import Parameters
 
 parameters = Parameters()
 
-iterations_per_worker = 4
-save_freq = 100
+iterations_per_worker = 1
+save_freq = 1
 n_epochs = 1000000
 convolutional = parameters.convolutional
 n_cpus = parameters.n_cores

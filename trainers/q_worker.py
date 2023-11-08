@@ -25,7 +25,8 @@ max_grad_norm = parameters.max_grad_norm
 
 
 class QWorker(mp.Process, QTrainer):
-    def __init__(self, global_optimizer, res_queue, global_qnet, iterations=1, worker_it=1, games_per_worker=8,
+    def __init__(self, global_optimizer, res_queue, global_qnet, iterations=1, worker_it=1,
+                 games_per_worker=games_per_iter,
                  stat_storage=None, net=None, convolutional=False):
         """
         Handles the training of an actor and a Q-network using an actor
