@@ -7,7 +7,7 @@ from game.shortest_path import ShortestPathBot
 import time
 
 parameters = Parameters()
-games_per_iter = parameters.games_per_iter
+games_per_iter = parameters.backprops_per_worker
 random_proportion = parameters.random_proportion
 
 

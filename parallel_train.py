@@ -5,7 +5,7 @@ from parameters import Parameters
 
 parameters = Parameters()
 
-iterations_per_worker = parameters.games_per_iter
+iterations_per_worker = parameters.backprops_per_worker
 save_freq = parameters.save_every
 n_epochs = parameters.epochs
 convolutional = parameters.convolutional

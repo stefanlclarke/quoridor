@@ -18,7 +18,6 @@ epsilon = parameters.epsilon
 move_prob = parameters.move_prob
 minimum_epsilon = parameters.minimum_epsilon
 minimum_move_prob = parameters.minimum_move_prob
-games_per_iter = parameters.games_per_iter
 random_proportion = parameters.random_proportion
 entropy_constant = parameters.entropy_constant
 max_grad_norm = parameters.max_grad_norm
@@ -26,7 +25,7 @@ max_grad_norm = parameters.max_grad_norm
 
 class QWorker(mp.Process, QTrainer):
     def __init__(self, global_optimizer, res_queue, global_qnet, iterations=1, worker_it=1,
-                 games_per_worker=games_per_iter,
+                 games_per_worker=1,
                  stat_storage=None, net=None, convolutional=False):
         """
         Handles the training of an actor and a Q-network using an actor

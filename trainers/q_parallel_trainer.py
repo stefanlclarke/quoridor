@@ -11,8 +11,8 @@ except RuntimeError:
     pass
 
 parameters = Parameters()
-games_per_iter = parameters.games_per_iter
 random_proportion = parameters.random_proportion
+games_per_worker = parameters.games_between_backprops
 
 
 class ParallelTrainer:
@@ -36,7 +36,8 @@ class ParallelTrainer:
     def reset_workers(self, worker_it=1):
         self.res_queue = mp.Queue()
         self.workers = [QWorker(self.optimizer, self.res_queue, self.critic, iterations=self.iterations_per_worker,
-                                worker_it=worker_it, stat_storage=self.stats, convolutional=self.convolutional)
+                                worker_it=worker_it, stat_storage=self.stats, convolutional=self.convolutional,
+                                games_per_worker=games_per_worker)
                         for _ in range(self.number_workers)]
 
     def train(self, number_iterations):
@@ -76,7 +77,7 @@ class ParallelTrainer:
 
             # get loss and print
             avg_loss = avg_loss / n_sample
-            n_games_played += n_sample
+            n_games_played += n_sample * games_per_worker
             print_iteration(i, avg_loss, n_games_played)
 
             # save if we reach saving iteration

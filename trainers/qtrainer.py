@@ -19,7 +19,6 @@ epsilon = parameters.epsilon
 move_prob = parameters.move_prob
 minimum_epsilon = parameters.minimum_epsilon
 minimum_move_prob = parameters.minimum_move_prob
-games_per_iter = parameters.games_per_iter
 random_proportion = parameters.random_proportion
 
 

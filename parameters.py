@@ -59,7 +59,8 @@ class Parameters:
         self.convolutional = True
 
         # training parameters
-        self.games_per_iter = 16
-        self.epochs = 100000
+        self.games_between_backprops = 4
+        self.backprops_per_worker = 4
+        self.epochs = 10
         self.save_every = 100
-        self.n_cores = 4
+        self.n_cores = 2
