@@ -5,9 +5,9 @@ from parameters import Parameters
 
 parameters = Parameters()
 
-iterations_per_worker = 1
-save_freq = 1
-n_epochs = 1000000
+iterations_per_worker = parameters.games_per_iter
+save_freq = parameters.save_every
+n_epochs = parameters.epochs
 convolutional = parameters.convolutional
 n_cpus = parameters.n_cores
 
