@@ -85,5 +85,4 @@ class QWorker(mp.Process, QTrainer):
             loss = self.push()
             self.net.pull(self.global_net)
             self.reset_memories()
-            self.res_queue.put([i * j, loss])
-        self.res_queue.put([None, loss])
+        self.res_queue.put(loss)

@@ -13,6 +13,7 @@ except RuntimeError:
 parameters = Parameters()
 random_proportion = parameters.random_proportion
 games_per_worker = parameters.games_between_backprops
+iters_per_worker = parameters.backprops_per_worker
 
 
 class ParallelTrainer:
@@ -45,6 +46,7 @@ class ParallelTrainer:
         # for tracking results
         print('{}\t\t{}\t\t{}'.format('epoch', 'loss', 'num games played'))
         n_games_played = 0
+        n_sample = len(self.workers)
 
         # loop over iterations
         for i in range(number_iterations):
@@ -52,32 +54,22 @@ class ParallelTrainer:
             # start all workers
             [w.start() for w in self.workers]
 
-            # tracking loss and number of plays
-            n_sample = 0
-            avg_loss = 0
-            while True:
-
-                # get from the queue
-                r = self.res_queue.get()
-                avg_loss += r[1]
-                n_sample += 1
-
-                # if any process has finished stop
-                if r[0] is None:
-                    break
-
             # join the workers
             [w.join() for w in self.workers]
 
             # terminate the workers
             [w.terminate() for w in self.workers]
 
+            # get loss
+            self.res_queue.put(None)
+            losses = (list(iter(self.res_queue.get, None)))
+
             # reset the workers
             self.reset_workers(worker_it=i)
 
             # get loss and print
-            avg_loss = avg_loss / n_sample
-            n_games_played += n_sample * games_per_worker
+            avg_loss = sum(losses) / n_sample
+            n_games_played += n_sample * games_per_worker * iters_per_worker
             print_iteration(i, avg_loss, n_games_played)
 
             # save if we reach saving iteration

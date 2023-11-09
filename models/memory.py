@@ -45,3 +45,9 @@ class Memory:
         self.rewards = []
         self.off_policy = []
         self.other_info = [[] for _ in range(self.number_other_info)]
+
+
+def combine_memories(memory_list):
+    combined_memory = Memory(number_other_info=memory_list[0].number_other_info)
+    for memory in memory_list:
+        combined_memory.game_log += memory.game_log

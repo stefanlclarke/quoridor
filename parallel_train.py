@@ -6,6 +6,7 @@ from parameters import Parameters
 parameters = Parameters()
 
 iterations_per_worker = parameters.backprops_per_worker
+games_per_backprop = parameters.games_between_backprops
 save_freq = parameters.save_every
 n_epochs = parameters.epochs
 convolutional = parameters.convolutional
@@ -28,4 +29,4 @@ if __name__ == '__main__':
     t1 = time.time()
 
     print('time taken {}'.format(t1 - t0))
-    print('num games played {}'.format(iterations_per_worker * cpus))
+    print('num games played {}'.format(iterations_per_worker * cpus * games_per_backprop))
