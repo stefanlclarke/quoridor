@@ -1,4 +1,5 @@
 import torch.nn as nn
+from torch import transpose
 
 
 class NN(nn.Module):
@@ -32,7 +33,7 @@ class NN(nn.Module):
 class ConvNN(nn.Module):
     def __init__(self, conv_sidelen, conv_in_channels, conv_internal_channels,
                  linear_in_dim, hidden_dim, num_conv, num_hidden, out_dim,
-                 kernel_size):
+                 kernel_size, stride=1, padding=0, maxpool_kernel=(1, 1)):
         """
         Very generic neural network class. Pretty self-explanatory.
         """
@@ -45,18 +46,20 @@ class ConvNN(nn.Module):
         self.linear_in_dim = linear_in_dim
         self.hidden_dim = hidden_dim
         self.out_dim = out_dim
-        self.kernel_size = kernel_size
-        self.stride = 1
-        self.padding = 1
-        self.maxpool_kernel = (1, 1)
+        self.kernel_size = (kernel_size, kernel_size)
+        self.stride = stride
+        self.padding = padding
+        self.maxpool_kernel = maxpool_kernel
+        self.conv_out_dim = self.conv_sidelen + 2 * (1 + self.num_conv) * padding \
+            - (1 + self.num_conv) * (self.kernel_size[0] - 1)
         self.conv_out_size = self.conv_sidelen ** 2 * self.conv_internal_channels
         self.input_layer_walls = nn.Linear(linear_in_dim, hidden_dim)
         self.input_layer_conv = nn.Conv2d(conv_in_channels, conv_internal_channels,
-                                          kernel_size=kernel_size, stride=self.stride,
+                                          kernel_size=self.kernel_size, stride=self.stride,
                                           padding=self.padding)
         self.hidden_layers_conv = [nn.Conv2d(conv_internal_channels, conv_internal_channels,
-                                             kernel_size=kernel_size, stride=self.stride,
-                                             padding=self.padding) for _ in range(self.conv_internal_channels)]
+                                             kernel_size=self.kernel_size, stride=self.stride,
+                                             padding=self.padding) for _ in range(self.num_conv)]
         self.pool = nn.MaxPool2d(kernel_size=self.maxpool_kernel)
         self.flat = nn.Flatten()
         self.hidden_conversion_layer = nn.Linear(self.conv_out_size, hidden_dim)
@@ -69,8 +72,11 @@ class ConvNN(nn.Module):
     def feed_forward(self, x):
 
         # convolutions
-        conv_part = x[:-self.linear_in_dim].reshape((1, self.conv_in_channels,
-                                                     self.conv_sidelen, self.conv_sidelen))
+        conv_part = x[:-self.linear_in_dim].reshape((self.conv_sidelen, self.conv_sidelen, self.conv_in_channels))
+        conv_part = transpose(conv_part, 0, 2)
+        conv_part = transpose(conv_part, 1, 2)
+        conv_part = conv_part.reshape((1, self.conv_in_channels, self.conv_sidelen, self.conv_sidelen))
+
         y_conv = self.relu(self.input_layer_conv(conv_part))
         for layer in self.hidden_layers_conv:
             y_conv = self.relu(layer(y_conv))

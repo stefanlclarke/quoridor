@@ -14,6 +14,8 @@ sidelen = parameters.sidelen
 conv_internal_channels = parameters.conv_internal_channels
 linear_in_dim = 2 * parameters.number_of_walls + 2
 num_conv = parameters.num_conv
+convolutional = parameters.convolutional
+kernel_size = parameters.conv_kernel_size
 
 
 class QNetConv(ConvNN):
@@ -31,7 +33,7 @@ class QNetConv(ConvNN):
         self.linear_in_dim = linear_in_dim
         super().__init__(self.conv_sidelen, self.conv_in_channels,
                          self.conv_internal_channels, self.linear_in_dim + actor_output_dim,
-                         critic_size_hidden, self.num_conv, critic_num_hidden, 1, (3, 3))
+                         critic_size_hidden, self.num_conv, critic_num_hidden, 1, kernel_size)
 
     def forward(self, x):
         return self.feed_forward(x)
@@ -61,7 +63,10 @@ class QNetBot(QuoridoorAgent):
         """
 
         super().__init__()
-        self.net = QNet()
+        if not convolutional:
+            self.net = QNet()
+        else:
+            self.net = QNetConv()
         if not good:
             self.net.load_state_dict(torch.load('./saves/{}'.format(save_name), map_location=torch.device('cpu')))
         if good:

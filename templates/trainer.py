@@ -54,7 +54,7 @@ class Trainer:
         """
         raise NotImplementedError()
 
-    def play_game(self, info=None, printing=False):
+    def play_game(self, info=None, printing=False, random_start=True):
 
         """
         Plays a game and stores all relevant information to memory.
@@ -65,7 +65,7 @@ class Trainer:
         """
 
         return play_game(info, self.memory_1, self.memory_2, self.game, self.on_policy_step, self.off_policy_step,
-                         self.spbots)
+                         self.spbots, printing=printing, random_start=random_start)
 
     def reset_memories(self):
         """
@@ -170,3 +170,17 @@ class Trainer:
         if get_time_info:
             return time_playing, time_learning, game_processing_time, on_policy_time, off_policy_time, moving_time, \
                 illegal_move_handling_time, checking_winner_time, wall_handling_time
+
+    def save_most_recent_play(self, name):
+        p1_actions = self.memory_1.game_log[-1][5]
+        p2_actions = self.memory_2.game_log[-1][5]
+        p1_actions = np.block([[g] for g in p1_actions])
+        p2_actions = np.block([[g] for g in p2_actions])
+        p1_rewards = self.memory_1.game_log[-1][2]
+        p2_rewards = self.memory_2.game_log[-1][2]
+        p1_rewards = np.block([[g] for g in p1_rewards])
+        p2_rewards = np.block([[g] for g in p2_rewards])
+        np.savetxt("game_samples/{}moves_p1.csv".format(name), p1_actions, delimiter=",")
+        np.savetxt("game_samples/{}moves_p2.csv".format(name), p2_actions, delimiter=",")
+        np.savetxt("game_samples/{}rewards_p1.csv".format(name), p1_rewards, delimiter=",")
+        np.savetxt("game_samples/{}rewards_p2.csv".format(name), p2_rewards, delimiter=",")

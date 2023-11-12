@@ -104,4 +104,21 @@ def unformatted_move_to_index(move, flip=False):
     if (move_part == np.array([0., -1.])).all():
         return 3
 
+    # handle wall part
+    wall_pos = move[2:4]
+    wall_orientation = move[4:6]
+
+    if flip:
+        wall_pos[0] = (BOARD_SIZE - 1) - wall_pos[0] - 1
+
+    binary_wall_pos = wall_pos[0] * (BOARD_SIZE - 1) + wall_pos[1]
+
+    # vertical wall
+    if wall_orientation[1] == 1:
+        return int(4 + binary_wall_pos)
+
+    # horizontal wall
+    elif wall_orientation[0] == 1:
+        return int(4 + (BOARD_SIZE - 1)**2 + binary_wall_pos)
+
     raise ValueError("something went wrong")

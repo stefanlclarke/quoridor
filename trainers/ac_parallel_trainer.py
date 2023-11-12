@@ -1,54 +1,55 @@
+import torch
 from parameters import Parameters
 from optimizers.shared_adam import SharedAdam
-from loss_functions.sarsa_loss_simplified import sarsa_loss
-from trainers.q_worker import QWorker
+from trainers.ac_worker import ACWorker, WeightClipper
 import torch.multiprocessing as mp
-from torch.multiprocessing import set_start_method
-import torch
-
-try:
-    set_start_method('spawn')
-except RuntimeError:
-    pass
+from loss_functions.sarsa_loss_simplified import sarsa_loss
+from loss_functions.actor_loss import actor_loss
 
 parameters = Parameters()
 random_proportion = parameters.random_proportion
+random_proportion = parameters.random_proportion
 games_per_worker = parameters.games_between_backprops
 iters_per_worker = parameters.backprops_per_worker
+save_freq = parameters.save_every
 total_reset_every = parameters.total_reset_every
-learning_rate = parameters.learning_rate
 
 
 class ParallelTrainer:
-    def __init__(self, number_workers, global_critic, save_name, iterations_per_worker=1, save_freq=1,
+    def __init__(self, number_workers, global_critic, global_actor, save_name='test', iterations_per_worker=1,
                  convolutional=False):
         """
         Template class for training AI on Quoridor.
         """
         self.critic = global_critic
-        self.iterations_per_worker = iterations_per_worker
-        self.optimizer = SharedAdam(self.critic.parameters(), lr=learning_rate)
+        self.actor = global_actor
+        self.optimizer = SharedAdam(self.critic.parameters())
+        self.actor_opt = SharedAdam(self.actor.parameters())
+        self.res_queue = mp.Queue()
+        self.workers = [ACWorker(self.optimizer, self.actor_opt, self.res_queue, self.critic, self.actor,
+                                 total_epochs=iterations_per_worker, convolutional=convolutional)
+                        for _ in range(number_workers)]
         self.number_workers = number_workers
-        self.save_name = save_name
+        self.iterations_per_worker = iterations_per_worker
         self.save_freq = save_freq
-        self.games_played = 0
-        self.stats = TrainingStatistics()
-        self.workers = []
+        self.save_name = save_name
         self.convolutional = convolutional
         self.total_reset_every = total_reset_every
-        self.reset_workers()
+        self.clipper = WeightClipper()
 
     def reset_workers(self, worker_it=1):
         self.res_queue = mp.Queue()
-        self.workers = [QWorker(self.optimizer, self.res_queue, self.critic, iterations=self.iterations_per_worker,
-                                worker_it=worker_it, stat_storage=self.stats, convolutional=self.convolutional,
-                                games_per_worker=games_per_worker)
+        self.workers = [ACWorker(self.optimizer, self.actor_opt, self.res_queue, self.critic, self.actor,
+                                 total_epochs=self.iterations_per_worker, convolutional=self.convolutional,
+                                 worker_it=worker_it)
                         for _ in range(self.number_workers)]
 
     def train(self, number_iterations):
 
         # for tracking results
-        print_iteration('epoch', 'loss', 'n games', 'move_legality', 'average reward', 'average game len')
+        print_iteration('epoch', 'loss', 'actor loss', 'entropy loss', 'critic loss',
+                        'n games', 'move_legality',
+                        'average reward', 'average game len')
         n_games_played = 0
         n_sample = len(self.workers)
         i_normalizer = 0
@@ -79,22 +80,33 @@ class ParallelTrainer:
                 self.workers[0].reset_memories()
                 self.workers[0].play_game(info=[i - i_normalizer], printing=True, random_start=False)
                 self.workers[0].log_memories()
-                critic_p1_loss, advantage_1 = sarsa_loss(self.workers[0].memory_1, self.workers[0].net, 1,
+                critic_p1_loss, advantage_1 = sarsa_loss(self.workers[0].memory_1, self.workers[0].net, 0,
                                                          self.workers[0].possible_moves, printing=True,
                                                          return_advantage=True)
-                critic_p2_loss, advantage_2 = sarsa_loss(self.workers[0].memory_2, self.workers[0].net, 1,
+                critic_p2_loss, advantage_2 = sarsa_loss(self.workers[0].memory_2, self.workers[0].net, 0,
                                                          self.workers[0].possible_moves, printing=True,
                                                          return_advantage=True)
                 self.workers[0].save_most_recent_play(f'play{i}')
-                print_iteration('epoch', 'loss', 'n games', 'move_legality', 'average reward', 'average game len')
+                actor_p1_loss, entropy_p1_loss = actor_loss(self.workers[0].memory_1, advantage_1,
+                                                            entropy_constant=parameters.entropy_constant)
+                actor_p2_loss, entropy_p2_loss = actor_loss(self.workers[0].memory_2, advantage_2,
+                                                            entropy_constant=parameters.entropy_constant)
+                print_iteration('epoch', 'loss', 'actor loss', 'entropy loss', 'critic loss',
+                                'n games', 'move_legality',
+                                'average reward', 'average game len')
 
             # reset the workers
             self.reset_workers(worker_it=i - i_normalizer)
 
             # get loss and print
-            avg_loss = sum(losses) / n_sample
+            avg_losses = sum(losses) / n_sample
             n_games_played += n_sample * games_per_worker * iters_per_worker
-            print_iteration(i, avg_loss, n_games_played, game_info[-4], game_info[-3], game_info[-2])
+            print_iteration(i, avg_losses[0], avg_losses[1], avg_losses[2], avg_losses[3], n_games_played,
+                            game_info[-4], game_info[-3], game_info[-2]
+                            )
+
+            # clip actor weights
+            self.actor.apply(self.clipper)
 
             # save if we reach saving iteration
             if i % self.save_freq == 0:
@@ -108,16 +120,8 @@ class ParallelTrainer:
         """
         Saves network parameters to memory.
         """
-        torch.save(self.critic.state_dict(), './saves/{}'.format(name + str(j)))
-
-
-class TrainingStatistics:
-    def __init__(self):
-        """
-        A class which stores statistics relating to the training run
-        """
-
-        self.n_games_played = 0
+        torch.save(self.critic.state_dict(), './saves/{}_critic'.format(name + str(j)))
+        torch.save(self.actor.state_dict(), './saves/{}_actor'.format(name + str(j)))
 
 
 def print_iteration(*args):

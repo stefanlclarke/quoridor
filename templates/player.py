@@ -6,7 +6,8 @@ parameters = Parameters()
 random_proportion = parameters.random_proportion
 
 
-def play_game(info, memory_1, memory_2, game, on_policy_step, off_policy_step, spbots):
+def play_game(info, memory_1, memory_2, game, on_policy_step, off_policy_step, spbots, printing=False,
+              random_start=True):
 
     """
     Plays a game and stores all relevant information to memory.
@@ -27,17 +28,31 @@ def play_game(info, memory_1, memory_2, game, on_policy_step, off_policy_step, s
 
     # stores number of games played
     rounds = 0
+    ticks = 0
 
     # randomly decide whether to play the game from a random position or the start position
-    unif = np.random.uniform()
-    if unif < random_proportion:
-        game.reset(random_positions=True)
+    if random_start:
+        unif = np.random.uniform()
+        if unif < random_proportion:
+            game.reset(random_positions=True)
+        else:
+            game.reset()
     else:
         game.reset()
 
     # start the game
     playing = True
+
+    # tracks legality of moves
+    total_legal_moves = 0
+    total_reward = 0
+
     while playing:
+        ticks += 1
+
+        # if printing then print
+        if printing:
+            game.print()
 
         # timer
         t0 = time.time()
@@ -75,21 +90,29 @@ def play_game(info, memory_1, memory_2, game, on_policy_step, off_policy_step, s
             off_policy_time += t1 - t0
 
         # make the move
-        new_state, playing, winner, reward, legal, moving, illegal_move_handling, checking_winner, wall_handling \
+        new_state, playing, winner, reward, legal, true_move, moving, illegal_move_handling, checking_winner, \
+            wall_handling \
             = game.move(move_reformatter(move, flip=flip), get_time_info=True)
 
         # save sate and move to memory
-        memory.save(state, move, reward, off_policy, step_info)
+        true_move_index = unformatted_move_to_index(true_move, flip=flip)
+        true_move = np.zeros(move.shape)
+        true_move[true_move_index] = 1
+        memory.save(state, move, reward, off_policy, step_info, true_move)
 
         # if someone has won end the game
         if winner != 0:
             playing = False
             if winner == 1:
-                memory_1.rewards[-1] = memory_1.rewards[-1] + parameters.win_reward
-                memory_2.rewards[-1] = memory_2.rewards[-1] - parameters.win_reward
+                memory_1.rewards[-1] = memory_1.rewards[-1] + parameters.win_reward * \
+                    (1 + parameters.win_speed_param / rounds)
+                memory_2.rewards[-1] = memory_2.rewards[-1] - parameters.win_reward * \
+                    (1 + parameters.win_speed_param / rounds)
             if winner == 2:
-                memory_1.rewards[-1] = memory_1.rewards[-1] - parameters.win_reward
-                memory_2.rewards[-1] = memory_2.rewards[-1] + parameters.win_reward
+                memory_1.rewards[-1] = memory_1.rewards[-1] - parameters.win_reward * \
+                    (1 + parameters.win_speed_param / rounds)
+                memory_2.rewards[-1] = memory_2.rewards[-1] + parameters.win_reward * \
+                    (1 + parameters.win_speed_param / rounds)
 
         # handle timing trackers
         t2 = time.time()
@@ -99,6 +122,25 @@ def play_game(info, memory_1, memory_2, game, on_policy_step, off_policy_step, s
         checking_winner_time += checking_winner
         wall_handling_time += wall_handling
 
+        # handle other trackers
+        total_legal_moves += int(legal)
+        total_reward += reward
+
+    if printing:
+        game.print()
+        print('GAME OVER')
+
     # return the results (timings)
-    return game_processing_time, on_policy_time, off_policy_time, moving_time, illegal_move_handling_time, \
-        checking_winner_time, wall_handling_time
+    output_dict = {
+        'game_processing_time': game_processing_time,
+        'on_policy_time': on_policy_time,
+        'off_policy_time': off_policy_time,
+        'moving_time': moving_time,
+        'illegal_move_handling_time': illegal_move_handling_time,
+        'checking_winner_time': checking_winner_time,
+        'wall_handling_time': wall_handling_time,
+        'percentage_legal_moves': total_legal_moves / ticks,
+        'average_reward': total_reward / ticks,
+        'game_length': rounds
+    }
+    return output_dict

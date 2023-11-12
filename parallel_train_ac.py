@@ -1,6 +1,8 @@
-from trainers.q_parallel_trainer import ParallelTrainer
+from trainers.ac_parallel_trainer import ParallelTrainer
 from models.q_models import QNet, QNetConv, QNetBot
+from models.actor_models import Actor
 import time
+import torch
 from parameters import Parameters
 
 parameters = Parameters()
@@ -18,15 +20,17 @@ if __name__ == '__main__':
     cpus = n_cpus
     print(f'I am using {cpus} CPUs')
 
+    actor = Actor()
     if convolutional:
         critic = QNetConv()
     else:
         critic = QNet()
-    trainer = ParallelTrainer(cpus, critic, 'QtestNOCONVnewloss', iterations_per_worker=iterations_per_worker,
-                              save_freq=save_freq, convolutional=convolutional)
+    # critic.load_state_dict(torch.load('saves/AC5by511Nov20000_critic'))
+    # actor.load_state_dict(torch.load('saves/AC5by511Nov20000_actor'))
+
+    trainer = ParallelTrainer(cpus, critic, actor, 'AC3by312Nov', convolutional=convolutional)
 
     trainer.train(n_epochs)
     t1 = time.time()
 
     print('time taken {}'.format(t1 - t0))
-    print('num games played {}'.format(iterations_per_worker * cpus * games_per_backprop))

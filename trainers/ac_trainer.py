@@ -1,11 +1,12 @@
 import torch
+import numpy as np
 from parameters import Parameters
-from models.q_models import QNet
+from models.q_models import QNet, QNetConv
 from models.actor_models import Actor
 import torch.nn as nn
 import torch.optim as optim
-from loss_functions.sarsa_loss import sarsa_loss
-from loss_functions.ppo_loss import actor_loss
+from loss_functions.sarsa_loss_simplified import sarsa_loss
+from loss_functions.actor_loss import actor_loss
 from templates.trainer import Trainer
 
 if torch.cuda.is_available():
@@ -21,14 +22,14 @@ epsilon = parameters.epsilon
 move_prob = parameters.move_prob
 minimum_epsilon = parameters.minimum_epsilon
 minimum_move_prob = parameters.minimum_move_prob
-games_per_iter = parameters.games_per_iter
 random_proportion = parameters.random_proportion
 entropy_constant = parameters.entropy_constant
 max_grad_norm = parameters.max_grad_norm
+epsilon = parameters.epsilon
 
 
 class ACTrainer(Trainer):
-    def __init__(self, qnet=None, actor=None, iterations_only_actor_train=0):
+    def __init__(self, qnet=None, actor=None, iterations_only_actor_train=0, convolutional=False):
         """
         Handles the training of an actor and a Q-network using an actor
         critic algorithm.
@@ -36,7 +37,10 @@ class ACTrainer(Trainer):
 
         super().__init__(number_other_info=4)
         if qnet is None:
-            self.net = QNet().to(device)
+            if not convolutional:
+                self.net = QNet().to(device)
+            else:
+                self.net = QNetConv().to(device)
         else:
             self.net = qnet.to(device)
         if actor is None:
@@ -57,12 +61,35 @@ class ACTrainer(Trainer):
 
         state_torch = torch.from_numpy(state).to(device).float()
         actor_move, actor_probabilities, actor_probability = self.actor.move(state_torch)
-        state_action = torch.cat([state_torch, torch.from_numpy(actor_move).to(device)])
+
+        # get the lr decay
+        if info is None:
+            decay = 1.
+        else:
+            decay = info[0]
+
+        # decide whether to move randomly
+        u = np.random.uniform()
+        v = np.random.uniform()
+
+        # figure out what the random move is
+        if u < max([epsilon**decay, minimum_epsilon]):
+            random_move = True
+            if v < max([move_prob**decay, minimum_move_prob]):
+                move = np.random.choice(4)
+            else:
+                move = np.random.choice(parameters.bot_out_dimension - 4) + 4
+            probability = actor_probabilities[move]
+            move = self.possible_moves[move]
+        else:
+            random_move = False
+            move = actor_move
+            probability = actor_probability
+
+        state_action = torch.cat([state_torch, torch.from_numpy(move).to(device)])
         critic_action_value = self.net.feed_forward(state_action.float())
 
-        move = actor_move
-        probability = actor_probability
-        return move, [critic_action_value, critic_action_value, probability, actor_probabilities], False
+        return move, [critic_action_value, critic_action_value, probability, actor_probabilities], random_move
 
     def off_policy_step(self, state, move_ind, info):
         """

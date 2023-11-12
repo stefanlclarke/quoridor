@@ -1,15 +1,6 @@
-import numpy as np
 import torch
 from parameters import Parameters
-from models.q_models import QNet
-from models.actor_models import Actor
-import torch.nn as nn
-from game.move_reformatter import move_reformatter, unformatted_move_to_index
-import copy
-import torch.optim as optim
-from game.game_helper_functions import *
 from loss_functions.sarsa_loss import sarsa_loss
-from game.shortest_path import *
 from loss_functions.ppo_loss import actor_loss
 from trainers.ac_trainer import ACTrainer
 import torch.multiprocessing as mp
@@ -34,7 +25,8 @@ max_grad_norm = parameters.max_grad_norm
 
 
 class ACWorker(mp.Process, ACTrainer):
-    def __init__(self, global_optimizer, global_actor_optimizer, res_queue, global_qnet, global_actor, iterations_only_actor_train=0, iterations=1):
+    def __init__(self, global_optimizer, global_actor_optimizer, res_queue, global_qnet, global_actor,
+                 iterations_only_actor_train=0, iterations=1):
         """
         Handles the training of an actor and a Q-network using an actor
         critic algorithm. Used in multiprocessing.
@@ -68,8 +60,10 @@ class ACWorker(mp.Process, ACTrainer):
         Calculates loss and does backpropagation.
         """
 
-        critic_p1_loss, advantage_1 = sarsa_loss(self.memory_1, self.net, 0, self.possible_moves, printing=False, return_advantage=True)
-        critic_p2_loss, advantage_2 = sarsa_loss(self.memory_2, self.net, 0, self.possible_moves, printing=False, return_advantage=True)
+        critic_p1_loss, advantage_1 = sarsa_loss(self.memory_1, self.net, 0, self.possible_moves, printing=False,
+                                                 return_advantage=True)
+        critic_p2_loss, advantage_2 = sarsa_loss(self.memory_2, self.net, 0, self.possible_moves, printing=False,
+                                                 return_advantage=True)
         critic_loss = critic_p1_loss + critic_p2_loss
 
         actor_p1_loss = actor_loss(self.memory_1, advantage_1, entropy_constant=entropy_constant)

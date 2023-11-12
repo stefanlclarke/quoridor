@@ -10,7 +10,6 @@ else:
 parameters = Parameters()
 gamma = parameters.gamma
 lambd = parameters.lambd
-cutting = parameters.cut_at_random_move
 
 
 def sarsa_loss(memory, net, epoch, possible_moves, printing=False, return_advantage=False):
@@ -50,6 +49,7 @@ def sarsa_loss(memory, net, epoch, possible_moves, printing=False, return_advant
         if epoch == 0:
             move_avs = game[4][0]
             avs = game[4][1]
+            move_avs = game[4][1]
             random_moves = game[3]
         else:
             move_avs = []
@@ -66,54 +66,31 @@ def sarsa_loss(memory, net, epoch, possible_moves, printing=False, return_advant
                 random_moves.append(True)
 
         sarsa_values = np.zeros(len(rewards))
+        discounted_rewards = [gamma**u * rewards[u] for u in range(len(rewards))]
 
         # iterate over steps of the game
         for i in range(len(sarsa_values)):
 
-            # keep track of the moment we go off-policy
-            no_random_move_so_far = True
-
             # iterate over steps j after step i
             for j in range(len(sarsa_values) - i - 1):
 
-                # get discounted rewards on future steps
-                discounted_rewards = [gamma**u * rewards[i + u] for u in range(j + 1)]
+                # get this-step sarsa
+                discounted_step_reward = sum(discounted_rewards[i:i + j + 1]) / (gamma**i) + avs[i + j + 1] \
+                    * gamma ** (j + 1)
+                sarsa_ij = lambd**j * (discounted_step_reward)
+                sarsa_values[i] += sarsa_ij
 
-                # if not cutting at random move
-                if no_random_move_so_far or not cutting:
-                    sarsa_values[i] = sarsa_values[i] \
-                        + (1 - lambd) * (lambd**j) * ((gamma)**(j + 1) * avs[i + j + 1].detach().cpu().numpy()
-                                                      + sum(discounted_rewards[0:]))
+            # get terminal sarsa
+            discounted_step_reward = sum(discounted_rewards[i:]) / (gamma**i)
+            sarsa_ij = lambd**(len(sarsa_values) - i - 1) * (discounted_step_reward)
+            sarsa_values[i] += sarsa_ij
 
-                    # for policy cutting
-                    if random_moves[i + j + 1]:
-                        final_index = j
-                        no_random_move_so_far = False
-
-                # ignore this (only useful when policy cutting)
-                elif cutting and (not no_random_move_so_far):
-                    j_ = final_index
-                    discounted_rewards = [gamma**u * rewards[i + u] for u in range(j_ + 1)]
-                    sarsa_values[i] = sarsa_values[i] \
-                        + (1 - lambd) * (lambd**j) * ((gamma)**(j_ + 1) * avs[i + j_ + 1].detach().cpu().numpy() 
-                                                      + sum(discounted_rewards))
-
-            # do the same for index i
-            if no_random_move_so_far or not cutting:
-                discounted_rewards = [gamma**u * rewards[i + u] for u in range(len(sarsa_values) - i)]
-                sarsa_values[i] = sarsa_values[i] + (lambd) ** (len(sarsa_values) - i - 1) * sum(discounted_rewards)
-
-            # ignore
-            else:
-                j_ = final_index
-                discounted_rewards = [gamma**u * rewards[i + u] for u in range(j_ + 1)]
-                sarsa_values[i] = sarsa_values[i] \
-                    + (lambd) ** (len(sarsa_values) - i - 1) * ((gamma)**j_ * avs[i + j_ + 1].detach().cpu().numpy() 
-                                                                + sum(discounted_rewards))
+            # normalize
+            sarsa_values[i] *= (1 - lambd) / (1 - lambd**(len(sarsa_values) - i))
 
         # calculate advantage and loss
         if len(move_avs) > 0:
-            advantage = torch.from_numpy(sarsa_values).to(device) - torch.cat(move_avs).reshape(sarsa_values.shape)
+            advantage = torch.from_numpy(sarsa_values).to(device) - torch.cat(avs).reshape(sarsa_values.shape)
             loss = loss + torch.pow(advantage, 2).mean()
             advantages.append(advantage)
         if printing:
@@ -123,7 +100,7 @@ def sarsa_loss(memory, net, epoch, possible_moves, printing=False, return_advant
             print('random', random_moves)
             print('avs', avs)
             print('move avs', move_avs)
-            print('td errors', torch.cat(move_avs))
+            print('advantages', advantages)
 
     if return_advantage:
         return loss, advantages

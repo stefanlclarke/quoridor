@@ -4,7 +4,7 @@ from templates.trainer import Trainer
 from parameters import Parameters
 from models.q_models import QNet
 import torch.optim as optim
-from loss_functions.sarsa_loss import sarsa_loss
+from loss_functions.sarsa_loss_simplified import sarsa_loss
 
 if torch.cuda.is_available():
     device = 'cuda:0'

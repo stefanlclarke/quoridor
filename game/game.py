@@ -127,11 +127,8 @@ class Quoridor:
         # if placing a wall, handle the wall placement
         if player_moving.walls > 0:
             self.copy_board_graph.copy_graph(self.board_graph)
-            try:
-                legal_wall = place_wall_with_check(self.board, wall_pos_command, wall_orientation_command,
-                                                   self.players[0].pos, self.players[1].pos, self.copy_board_graph)
-            except ValueError:
-                self.print()
+            legal_wall = place_wall_with_check(self.board, wall_pos_command, wall_orientation_command,
+                                               self.players[0].pos, self.players[1].pos, self.copy_board_graph)
 
             # if the wall is legal then add it to the board
             if legal_wall:
@@ -156,6 +153,7 @@ class Quoridor:
         t2 = time.time()
 
         # if the move is illegal then force a random move to be played
+        true_move = command
         if not legal:
 
             # get a list of all possible moves
@@ -178,6 +176,8 @@ class Quoridor:
                     self.players[self.moving_now].pos = 2 * random_move + player_moving_pos
                 else:
                     self.players[self.moving_now].pos = random_move + player_moving_pos
+
+            true_move = np.block([random_move, np.zeros(true_move.size - 2)])
 
         # time tracker
         t3 = time.time()
@@ -202,9 +202,9 @@ class Quoridor:
 
         # return whatever is necessary
         if not get_time_info:
-            return self.get_state(), self.playing, winner, reward, legal
+            return self.get_state(), self.playing, winner, reward, legal, true_move
         else:
-            return self.get_state(), self.playing, winner, reward, legal, moving, illegal_move_handling, \
+            return self.get_state(), self.playing, winner, reward, legal, true_move, moving, illegal_move_handling, \
                 checking_winner, wall_handling
 
     def get_state(self, flip=False, flatten=True):

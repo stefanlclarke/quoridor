@@ -13,6 +13,7 @@ class Memory:
         self.actions = []
         self.rewards = []
         self.off_policy = []
+        self.true_actions = []
 
         self.number_other_info = number_other_info
         self.other_info = [[] for _ in range(number_other_info)]
@@ -22,11 +23,12 @@ class Memory:
     def reset(self):
         self.__init__(number_other_info=self.number_other_info)
 
-    def save(self, state, action, reward, off_pol, other_info):
+    def save(self, state, action, reward, off_pol, other_info, true_action=None):
         self.states.append(state)
         self.actions.append(action)
         self.rewards.append(reward)
         self.off_policy.append(off_pol)
+        self.true_actions.append(true_action)
 
         for i in range(len(other_info)):
             self.other_info[i].append(other_info[i])
@@ -36,7 +38,8 @@ class Memory:
                 copy.deepcopy(self.actions),
                 copy.deepcopy(self.rewards),
                 copy.copy(self.off_policy),
-                copy.copy(self.other_info)]
+                copy.copy(self.other_info),
+                copy.copy(self.true_actions)]
 
         self.game_log.append(data)
 

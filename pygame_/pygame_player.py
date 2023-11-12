@@ -308,6 +308,7 @@ class PygamePlayer:
             if self.game.moving_now == 0:
                 if self.agent_1_input == 'human':
                     move = self.human_move()
+                    print('human move {}'.format(move))
                 else:
                     self.write_calculating()
                     if self.agent_1_input == 'board':
@@ -324,6 +325,7 @@ class PygamePlayer:
             if self.game.moving_now == 1:
                 if self.agent_2_input == 'human':
                     move = self.human_move()
+                    print('human move {}'.format(move))
                 else:
                     self.write_calculating()
                     if self.agent_2_input == 'board':
@@ -339,7 +341,7 @@ class PygamePlayer:
                     print('bot move {}'.format(move))
 
             # excecute move
-            new_state, playing, winner, reward, legal = self.game.move(move)
+            new_state, playing, winner, reward, legal, real = self.game.move(move)
             self.draw_board()
 
             # update display

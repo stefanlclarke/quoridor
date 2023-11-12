@@ -1,8 +1,10 @@
 import torch
+import time
+import numpy as np
 from parameters import Parameters
-from loss_functions.sarsa_loss import sarsa_loss
+from loss_functions.sarsa_loss_simplified import sarsa_loss
 from trainers.qtrainer import QTrainer
-from models.q_models import QNetConv
+from models.q_models import QNetConv, QNet
 import torch.multiprocessing as mp
 
 if torch.cuda.is_available():
@@ -21,6 +23,7 @@ minimum_move_prob = parameters.minimum_move_prob
 random_proportion = parameters.random_proportion
 entropy_constant = parameters.entropy_constant
 max_grad_norm = parameters.max_grad_norm
+backwards_per_worker = parameters.backwards_per_worker
 
 
 class QWorker(mp.Process, QTrainer):
@@ -33,6 +36,8 @@ class QWorker(mp.Process, QTrainer):
         """
         if convolutional:
             net = QNetConv()
+        else:
+            net = QNet()
 
         mp.Process.__init__(self)
         QTrainer.__init__(self, net=net)
@@ -51,16 +56,17 @@ class QWorker(mp.Process, QTrainer):
         self.n_games_played = 0
         self.stat_storage = stat_storage
         self.n_games_per_worker = games_per_worker
+        self.backwards_per_worker = backwards_per_worker
 
-    def push(self):
+    def push(self, epoch=0):
 
         """
         Calculates loss and does backpropagation.
         """
 
-        critic_p1_loss, advantage_1 = sarsa_loss(self.memory_1, self.net, 0, self.possible_moves, printing=False,
+        critic_p1_loss, advantage_1 = sarsa_loss(self.memory_1, self.net, epoch, self.possible_moves, printing=False,
                                                  return_advantage=True)
-        critic_p2_loss, advantage_2 = sarsa_loss(self.memory_2, self.net, 0, self.possible_moves, printing=False,
+        critic_p2_loss, advantage_2 = sarsa_loss(self.memory_2, self.net, epoch, self.possible_moves, printing=False,
                                                  return_advantage=True)
         critic_loss = critic_p1_loss + critic_p2_loss
 
@@ -77,12 +83,22 @@ class QWorker(mp.Process, QTrainer):
         return float(loss.detach().cpu().numpy())
 
     def run(self):
+        time_info_total = []
         for i in range(self.iterations):
+            self.reset_memories()
             for j in range(self.n_games_per_worker):
-                self.play_game(info=[self.worker_it])
+                game_info = self.play_game(info=[self.worker_it])
+                game_timing_array = np.array(list(game_info.values()) + [0])
                 self.stat_storage.n_games_played += 1
                 self.log_memories()
-            loss = self.push()
-            self.net.pull(self.global_net)
-            self.reset_memories()
-        self.res_queue.put(loss)
+                time_info_total.append(game_timing_array)
+            for j in range(self.backwards_per_worker):
+                t0 = time.time()
+                loss = self.push(epoch=1)
+                self.net.pull(self.global_net)
+                self.optimizer.zero_grad()
+                t1 = time.time()
+                backward_timing_array = np.array([0 for _ in range(len(game_timing_array) - 1)] + [t1 - t0])
+                time_info_total.append(backward_timing_array)
+        total_time = sum(time_info_total) / (self.iterations * self.n_games_per_worker)
+        self.res_queue.put([loss, total_time])
