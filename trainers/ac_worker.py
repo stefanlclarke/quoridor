@@ -2,7 +2,7 @@ import torch
 import numpy as np
 import time
 from parameters import Parameters
-from loss_functions.sarsa_loss_simplified import sarsa_loss
+from loss_functions.sarsa_loss_ac import sarsa_loss_ac
 from loss_functions.actor_loss import actor_loss
 from trainers.ac_trainer import ACTrainer
 import torch.multiprocessing as mp
@@ -27,6 +27,7 @@ games_per_worker = parameters.games_between_backprops
 backwards_per_worker = parameters.backwards_per_worker
 train_actor = parameters.train_actor
 train_critic = parameters.train_critic
+n_iterations_only_critic = parameters.n_iterations_only_critic
 
 
 class WeightClipper(object):
@@ -72,16 +73,21 @@ class ACWorker(mp.Process, ACTrainer):
         self.backwards_per_worker = backwards_per_worker
         self.worker_it = worker_it
 
-    def push(self, train_critic=True, train_actor=True):
+    def push(self, train_critic=True, train_actor=True, push_epoch=0):
 
         """
         Calculates loss and does backpropagation.
         """
 
-        critic_p1_loss, advantage_1 = sarsa_loss(self.memory_1, self.net, 0, self.possible_moves, printing=False,
-                                                 return_advantage=True)
-        critic_p2_loss, advantage_2 = sarsa_loss(self.memory_2, self.net, 0, self.possible_moves, printing=False,
-                                                 return_advantage=True)
+        if self.worker_it < n_iterations_only_critic:
+            train_actor = False
+
+        critic_p1_loss, advantage_1 = sarsa_loss_ac(self.memory_1, self.net, push_epoch, self.possible_moves,
+                                                    printing=False,
+                                                    return_advantage=True)
+        critic_p2_loss, advantage_2 = sarsa_loss_ac(self.memory_2, self.net, push_epoch, self.possible_moves,
+                                                    printing=False,
+                                                    return_advantage=True)
         critic_loss = critic_p1_loss + critic_p2_loss
 
         actor_p1_loss, entropy_p1_loss = actor_loss(self.memory_1, advantage_1,

@@ -3,7 +3,7 @@ from parameters import Parameters
 from optimizers.shared_adam import SharedAdam
 from trainers.ac_worker import ACWorker, WeightClipper
 import torch.multiprocessing as mp
-from loss_functions.sarsa_loss_simplified import sarsa_loss
+from loss_functions.sarsa_loss_ac import sarsa_loss_ac
 from loss_functions.actor_loss import actor_loss
 
 parameters = Parameters()
@@ -80,12 +80,12 @@ class ParallelTrainer:
                 self.workers[0].reset_memories()
                 self.workers[0].play_game(info=[i - i_normalizer], printing=True, random_start=False)
                 self.workers[0].log_memories()
-                critic_p1_loss, advantage_1 = sarsa_loss(self.workers[0].memory_1, self.workers[0].net, 0,
-                                                         self.workers[0].possible_moves, printing=True,
-                                                         return_advantage=True)
-                critic_p2_loss, advantage_2 = sarsa_loss(self.workers[0].memory_2, self.workers[0].net, 0,
-                                                         self.workers[0].possible_moves, printing=True,
-                                                         return_advantage=True)
+                critic_p1_loss, advantage_1 = sarsa_loss_ac(self.workers[0].memory_1, self.workers[0].net, 0,
+                                                            self.workers[0].possible_moves, printing=True,
+                                                            return_advantage=True)
+                critic_p2_loss, advantage_2 = sarsa_loss_ac(self.workers[0].memory_2, self.workers[0].net, 0,
+                                                            self.workers[0].possible_moves, printing=True,
+                                                            return_advantage=True)
                 self.workers[0].save_most_recent_play(f'play{i}')
                 actor_p1_loss, entropy_p1_loss = actor_loss(self.workers[0].memory_1, advantage_1,
                                                             entropy_constant=parameters.entropy_constant)

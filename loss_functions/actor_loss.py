@@ -1,5 +1,4 @@
 import torch
-import numpy as np
 
 if torch.cuda.is_available():
     device = 'cuda:0'
@@ -14,11 +13,11 @@ def actor_loss(memory, advantages,
     for i in range(len(advantages)):
         advantage = advantages[i].detach()
         if epoch == 0:
-            probs = [x.unsqueeze(0) for x in memory.game_log[i][4][2]]
+            probs = [x.unsqueeze(0) for x in memory.game_log[i][4][1]]
             probabilities = torch.cat(probs)
-            distributions = memory.game_log[i][4][3]
+            distributions = memory.game_log[i][4][2]
         else:
-            raise ValueError('Epoch cannot be nonzero!')
+            raise ValueError("Only supported for epoch 0!")
 
         log_probabilities = torch.log(probabilities)
         loss += - torch.sum(log_probabilities * advantage)

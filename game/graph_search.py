@@ -172,7 +172,7 @@ class BoardGraph:
                 if len(current_active_set) == 0:
                     running = False
                     break
-                
+
                 # go over vertices checking neighbours and updating minimum length based on this
                 current_active_set = sorted(current_active_set, key=lambda x: path_lengths[x])
                 vertex_to_check = current_active_set[0]

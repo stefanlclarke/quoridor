@@ -282,7 +282,7 @@ class Quoridor:
         self.playing = other_game.playing
         self.board_graph.copy_graph(other_game.board_graph)
 
-    def copy_board(self, board, player_1_loc, player_2_loc, player_1_walls, player_2_walls):
+    def copy_board(self, board, player_1_loc, player_2_loc, player_1_walls, player_2_walls, moving_now=0):
 
         """
         a function to copy board and player info into this game class
@@ -302,13 +302,16 @@ class Quoridor:
 
             player_2_walls: int
                 the number of walls belonging to player 2
+
+            moving_now: int
+                player next to move
         """
 
         # do the relevant copying
         self.board = copy.copy(board)
         self.players = [Player(player_1_loc, player_1_walls), Player(player_2_loc, player_2_walls)]
         self.num_players = len(self.players)
-        self.moving_now = 0
+        self.moving_now = moving_now
         self.playing = True
 
     def print(self):
@@ -361,3 +364,24 @@ class Quoridor:
         if legal:
             self.players[player].walls -= 1
             self.board_graph.wall_placement(loc, orientation)
+
+    def flat_state_to_board(self, state_vector):
+
+        """
+        Converts the flattened satte-vector into board, p1_loc, p2_loc, p1_walls, p2_walls
+        """
+
+        board_part = state_vector[:4 * BOARD_SIZE**2]
+        wall_part = state_vector[4 * BOARD_SIZE**2:]
+        wall_part_p1 = wall_part[:START_WALLS]
+        wall_part_p2 = wall_part[START_WALLS:]
+        n_walls_p1 = np.where(wall_part_p1 == 1)[0]
+        n_walls_p2 = np.where(wall_part_p2 == 1)[0]
+
+        board = board_part.reshape((BOARD_SIZE, BOARD_SIZE, 4))
+        p1_position = np.where(board[:, :, 2] == 1)
+        p1_position = np.array([p1_position[0], p1_position[1]])
+        p2_position = np.where(board[:, :, 3] == 1)
+        p2_position = np.array([p2_position[0], p2_position[1]])
+
+        return board, p1_position, p2_position, n_walls_p1, n_walls_p2

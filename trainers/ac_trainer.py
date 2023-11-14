@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 from parameters import Parameters
-from models.q_models import QNet, QNetConv
+from models.critic_models import Critic, CriticConv
 from models.actor_models import Actor
 import torch.nn as nn
 import torch.optim as optim
@@ -38,9 +38,9 @@ class ACTrainer(Trainer):
         super().__init__(number_other_info=4)
         if qnet is None:
             if not convolutional:
-                self.net = QNet().to(device)
+                self.net = Critic().to(device)
             else:
-                self.net = QNetConv().to(device)
+                self.net = CriticConv().to(device)
         else:
             self.net = qnet.to(device)
         if actor is None:
@@ -86,10 +86,9 @@ class ACTrainer(Trainer):
             move = actor_move
             probability = actor_probability
 
-        state_action = torch.cat([state_torch, torch.from_numpy(move).to(device)])
-        critic_action_value = self.net.feed_forward(state_action.float())
+        critic_value = self.net.feed_forward(state_torch)
 
-        return move, [critic_action_value, critic_action_value, probability, actor_probabilities], random_move
+        return move, [critic_value, probability, actor_probabilities], random_move
 
     def off_policy_step(self, state, move_ind, info):
         """
@@ -98,17 +97,13 @@ class ACTrainer(Trainer):
 
         state_torch = torch.from_numpy(state).to(device).float()
         actor_move, actor_probabilities, actor_probability = self.actor.move(state_torch)
-        state_action = torch.cat([state_torch, torch.from_numpy(actor_move).to(device)])
-        critic_action_value = self.net.feed_forward(state_action.float())
+        critic_value = self.net.feed_forward(state_torch)
 
-        move = actor_move
         probability = actor_probability
 
         probability = actor_probabilities[move_ind]
-        state_action_new = torch.cat([state_torch, torch.from_numpy(move).to(device)])
-        move_critic_action_value = self.net.feed_forward(state_action_new.float())
 
-        return [move_critic_action_value, critic_action_value, probability, actor_probabilities]
+        return [critic_value, probability, actor_probabilities]
 
     def save(self, name, info=None):
         """

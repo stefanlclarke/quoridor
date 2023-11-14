@@ -1,5 +1,5 @@
 from trainers.ac_parallel_trainer import ParallelTrainer
-from models.q_models import QNet, QNetConv, QNetBot
+from models.critic_models import CriticConv, Critic
 from models.actor_models import Actor
 import time
 import torch
@@ -22,9 +22,9 @@ if __name__ == '__main__':
 
     actor = Actor()
     if convolutional:
-        critic = QNetConv()
+        critic = CriticConv()
     else:
-        critic = QNet()
+        critic = Critic()
     # critic.load_state_dict(torch.load('saves/AC5by511Nov20000_critic'))
     # actor.load_state_dict(torch.load('saves/AC5by511Nov20000_actor'))
 

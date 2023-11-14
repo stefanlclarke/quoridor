@@ -49,7 +49,7 @@ class Parameters:
         # learning rates
         self.learning_rate = 0.004
         self.actor_learning_rate = 0.004
-        self.critic_learning_rate = 0.001
+        self.critic_learning_rate = 0.04
         self.actor_weight_clip = 1e3
 
         # clipping
@@ -57,8 +57,9 @@ class Parameters:
         self.entropy_constant = 0.003
 
         # what am I training?
-        self.train_actor = False
+        self.train_actor = True
         self.train_critic = True
+        self.n_iterations_only_critic = 1000
 
         # epoch parameters
         self.games_between_backprops = 1
@@ -67,7 +68,7 @@ class Parameters:
         self.save_every = 100
         self.n_cores = 4
         self.backwards_per_worker = 1
-        self.total_reset_every = 2000
+        self.total_reset_every = 4000
 
         # storage parameters
         self.save_game_every = 100
