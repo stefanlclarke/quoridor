@@ -5,6 +5,7 @@ from game.game_helper_functions import move_piece, place_wall_with_check, check_
 from game.graph_search_lp import BoardGraph
 from parameters import Parameters
 from game.printing import get_printable_board
+from game.move_reformatter import move_reformatter
 
 parameters = Parameters()
 BOARD_SIZE = parameters.board_size
@@ -74,7 +75,7 @@ class Quoridor:
         self.board_graph = BoardGraph()
         self.copy_board_graph = BoardGraph()
 
-    def move(self, command, get_time_info=False):
+    def move(self, command, get_time_info=False, reformat_from_onehot=False, flip_reformat=False):
 
         """
         handles a single player move
@@ -87,6 +88,10 @@ class Quoridor:
             get_time_info: bool
                 boolean which returns time taken by this function if True
         """
+
+        # reformat if needed
+        if reformat_from_onehot:
+            command = move_reformatter(command, flip=flip_reformat)
 
         # set trackers for what stage of the move we are in
         moving = 0.

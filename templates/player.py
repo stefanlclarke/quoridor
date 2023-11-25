@@ -92,7 +92,8 @@ def play_game(info, memory_1, memory_2, game, on_policy_step, off_policy_step, s
         # make the move
         new_state, playing, winner, reward, legal, true_move, moving, illegal_move_handling, checking_winner, \
             wall_handling \
-            = game.move(move_reformatter(move, flip=flip), get_time_info=True)
+            = game.move(move, get_time_info=True, reformat_from_onehot=True,
+                        flip_reformat=flip)
 
         # save sate and move to memory
         true_move_index = unformatted_move_to_index(true_move, flip=flip)

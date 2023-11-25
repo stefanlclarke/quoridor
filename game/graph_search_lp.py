@@ -161,7 +161,7 @@ class BoardGraph:
             else:
                 self.c_parameter = np.ones((self.cut_As[0].shape[1], 1))
 
-            self.problem.solve(solver='ECOS', warm_start=True) #, reoptimize=True)
+            self.problem.solve(solver='ECOS', warm_start=True)  # reoptimize=True)
 
             if return_player_move == i:
                 return self.constraints[0].dual_value
