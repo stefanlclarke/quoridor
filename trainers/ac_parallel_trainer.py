@@ -72,6 +72,7 @@ class ParallelTrainer:
             losses = [o[0] for o in out_info]
             game_info = [o[1] for o in out_info]
             game_info = sum(game_info) / len(game_info)
+            print(game_info)
 
             [w.reset_memories() for w in self.workers]
 

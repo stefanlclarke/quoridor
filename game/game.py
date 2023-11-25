@@ -2,7 +2,7 @@ import numpy as np
 import copy
 import time
 from game.game_helper_functions import move_piece, place_wall_with_check, check_win, get_legal_moves, flip_board
-from game.graph_search import BoardGraph
+from game.graph_search_lp import BoardGraph
 from parameters import Parameters
 from game.printing import get_printable_board
 

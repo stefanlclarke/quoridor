@@ -2,7 +2,7 @@ from game.game import Quoridor
 from parameters import Parameters
 import numpy as np
 from models.memory import Memory
-from game.shortest_path import ShortestPathBot
+from game.shortest_path_lp import ShortestPathBot
 from templates.player import play_game
 import time
 
