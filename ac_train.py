@@ -1,4 +1,3 @@
-
 from trainers.ac_trainer import ACTrainer
 import time
 
@@ -7,8 +6,8 @@ get_time_info = True
 
 t0 = time.time()
 time_playing, time_learning, game_processing_time, on_policy_time, off_policy_time, moving_time, \
-    illegal_move_handling_time, checking_winner_time, wall_handling_time \
-    = trainer.train(16, 16, 'ACtest', get_time_info=get_time_info)
+    illegal_move_handling_time, checking_winner_time, wall_handling_time = trainer.train(1000, 100, 'TEST',
+                                                                                         get_time_info=get_time_info)
 t1 = time.time()
 
 if get_time_info:

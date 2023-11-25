@@ -2,7 +2,6 @@ from trainers.ac_parallel_trainer import ParallelTrainer
 from models.critic_models import CriticConv, Critic
 from models.actor_models import Actor
 import time
-import torch
 from parameters import Parameters
 
 parameters = Parameters()
@@ -13,6 +12,7 @@ save_freq = parameters.save_every
 n_epochs = parameters.epochs
 convolutional = parameters.convolutional
 n_cpus = parameters.n_cores
+zero_critic = parameters.zero_critic
 
 if __name__ == '__main__':
 
@@ -25,6 +25,9 @@ if __name__ == '__main__':
         critic = CriticConv()
     else:
         critic = Critic()
+
+    if zero_critic:
+        critic.zero_all_parameters()
     # critic.load_state_dict(torch.load('saves/AC5by511Nov20000_critic'))
     # actor.load_state_dict(torch.load('saves/AC5by511Nov20000_actor'))
 

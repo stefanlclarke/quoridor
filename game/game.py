@@ -2,10 +2,10 @@ import numpy as np
 import copy
 import time
 from game.game_helper_functions import move_piece, place_wall_with_check, check_win, get_legal_moves, flip_board
-from game.graph_search_lp import BoardGraph
+from game.graph_search import BoardGraph
 from parameters import Parameters
 from game.printing import get_printable_board
-from game.move_reformatter import move_reformatter
+from game.move_reformatter import move_reformatter, unformatted_move_to_index
 
 parameters = Parameters()
 BOARD_SIZE = parameters.board_size
@@ -183,6 +183,12 @@ class Quoridor:
                     self.players[self.moving_now].pos = random_move + player_moving_pos
 
             true_move = np.block([random_move, np.zeros(true_move.size - 2)])
+
+            # make sure the true move is in the correct format
+            if reformat_from_onehot:
+                true_move_index = unformatted_move_to_index(true_move, flip=flip_reformat)
+                true_move = np.zeros(command.shape)
+                true_move[true_move_index] = 1
 
         # time tracker
         t3 = time.time()

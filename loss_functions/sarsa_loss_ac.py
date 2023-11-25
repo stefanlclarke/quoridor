@@ -8,8 +8,8 @@ else:
     device = 'cpu'
 
 parameters = Parameters()
-gamma = parameters.gamma
-lambd = parameters.lambd
+GAMMA = parameters.gamma
+LAMBDA = parameters.lambd
 
 
 def sarsa_loss_ac(memory, net, epoch, possible_moves, printing=False, return_advantage=False):
@@ -57,28 +57,7 @@ def sarsa_loss_ac(memory, net, epoch, possible_moves, printing=False, return_adv
                 state_values.append(value)
                 random_moves.append(True)
 
-        sarsa_values = np.zeros(len(rewards))
-        discounted_rewards = [gamma**u * rewards[u] for u in range(len(rewards))]
-
-        # iterate over steps of the game
-        for i in range(len(sarsa_values)):
-
-            # iterate over steps j after step i
-            for j in range(len(sarsa_values) - i - 1):
-
-                # get this-step sarsa
-                discounted_step_reward = sum(discounted_rewards[i:i + j + 1]) / (gamma**i) + state_values[i + j + 1] \
-                    * gamma ** (j + 1)
-                sarsa_ij = lambd**j * (discounted_step_reward)
-                sarsa_values[i] += sarsa_ij
-
-            # get terminal sarsa
-            discounted_step_reward = sum(discounted_rewards[i:]) / (gamma**i)
-            sarsa_ij = lambd**(len(sarsa_values) - i - 1) * (discounted_step_reward)
-            sarsa_values[i] += sarsa_ij
-
-            # normalize
-            sarsa_values[i] *= (1 - lambd) / (1 - lambd**(len(sarsa_values) - i))
+        sarsa_values = get_sarsa_ac(state_values, rewards, LAMBDA, GAMMA)
 
         # calculate advantage and loss
         if len(state_values) > 0:
@@ -97,3 +76,30 @@ def sarsa_loss_ac(memory, net, epoch, possible_moves, printing=False, return_adv
         return loss, advantages
 
     return loss
+
+
+def get_sarsa_ac(state_values, rewards, lambd, gamma):
+    sarsa_values = np.zeros(len(rewards))
+    discounted_rewards = [gamma**u * rewards[u] for u in range(len(rewards))]
+
+    # iterate over steps of the game
+    for i in range(len(sarsa_values)):
+
+        # iterate over steps j after step i
+        for j in range(len(sarsa_values) - i - 1):
+
+            # get this-step sarsa
+            discounted_step_reward = sum(discounted_rewards[i:i + j + 1]) / (gamma**i) + state_values[i + j + 1] \
+                * gamma ** (j + 1)
+            sarsa_ij = lambd**j * (discounted_step_reward)
+            sarsa_values[i] += sarsa_ij
+
+        # get terminal sarsa
+        discounted_step_reward = sum(discounted_rewards[i:]) / (gamma**i)
+        sarsa_ij = lambd**(len(sarsa_values) - i - 1) * (discounted_step_reward)
+        sarsa_values[i] += sarsa_ij
+
+        # normalize
+        sarsa_values[i] *= (1 - lambd) / (1 - lambd**(len(sarsa_values) - i))
+
+    return sarsa_values

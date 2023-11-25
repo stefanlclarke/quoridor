@@ -5,6 +5,7 @@ from trainers.ac_worker import ACWorker, WeightClipper
 import torch.multiprocessing as mp
 from loss_functions.sarsa_loss_ac import sarsa_loss_ac
 from loss_functions.actor_loss import actor_loss
+import numpy as np
 
 parameters = Parameters()
 random_proportion = parameters.random_proportion
@@ -72,7 +73,6 @@ class ParallelTrainer:
             losses = [o[0] for o in out_info]
             game_info = [o[1] for o in out_info]
             game_info = sum(game_info) / len(game_info)
-            print(game_info)
 
             [w.reset_memories() for w in self.workers]
 
@@ -81,6 +81,9 @@ class ParallelTrainer:
                 self.workers[0].reset_memories()
                 self.workers[0].play_game(info=[i - i_normalizer], printing=True, random_start=False)
                 self.workers[0].log_memories()
+                print([np.where(x == 1) for x in self.workers[0].memory_1.game_log[0][0]])
+                print([np.where(x == 1) for x in self.workers[0].memory_1.game_log[0][1]])
+                print(self.workers[0].memory_1.game_log[0][2])
                 critic_p1_loss, advantage_1 = sarsa_loss_ac(self.workers[0].memory_1, self.workers[0].net, 0,
                                                             self.workers[0].possible_moves, printing=True,
                                                             return_advantage=True)

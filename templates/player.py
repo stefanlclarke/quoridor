@@ -1,7 +1,7 @@
 import numpy as np
 import time
 from parameters import Parameters
-from game.move_reformatter import unformatted_move_to_index, move_reformatter
+from game.move_reformatter import unformatted_move_to_index
 parameters = Parameters()
 random_proportion = parameters.random_proportion
 
@@ -96,9 +96,6 @@ def play_game(info, memory_1, memory_2, game, on_policy_step, off_policy_step, s
                         flip_reformat=flip)
 
         # save sate and move to memory
-        true_move_index = unformatted_move_to_index(true_move, flip=flip)
-        true_move = np.zeros(move.shape)
-        true_move[true_move_index] = 1
         memory.save(state, move, reward, off_policy, step_info, true_move)
 
         # if someone has won end the game

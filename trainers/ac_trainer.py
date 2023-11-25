@@ -5,7 +5,7 @@ from models.critic_models import Critic, CriticConv
 from models.actor_models import Actor
 import torch.nn as nn
 import torch.optim as optim
-from loss_functions.sarsa_loss_simplified import sarsa_loss
+from loss_functions.sarsa_loss_ac import sarsa_loss_ac
 from loss_functions.actor_loss import actor_loss
 from templates.trainer import Trainer
 
@@ -124,15 +124,17 @@ class ACTrainer(Trainer):
         Calculates loss and does backpropagation.
         """
 
-        critic_p1_loss, advantage_1 = sarsa_loss(self.memory_1, self.net, 0, self.possible_moves, printing=False,
-                                                 return_advantage=True)
-        critic_p2_loss, advantage_2 = sarsa_loss(self.memory_2, self.net, 0, self.possible_moves, printing=False,
-                                                 return_advantage=True)
+        critic_p1_loss, advantage_1 = sarsa_loss_ac(self.memory_1, self.net, 0, self.possible_moves, printing=False,
+                                                    return_advantage=True)
+        critic_p2_loss, advantage_2 = sarsa_loss_ac(self.memory_2, self.net, 0, self.possible_moves, printing=False,
+                                                    return_advantage=True)
         critic_loss = critic_p1_loss + critic_p2_loss
 
-        actor_p1_loss = actor_loss(self.memory_1, advantage_1, entropy_constant=entropy_constant)
-        actor_p2_loss = actor_loss(self.memory_2, advantage_2, entropy_constant=entropy_constant)
-        actor_loss_val = actor_p1_loss + actor_p2_loss
+        actor_p1_loss, actor_p1_entropy_loss = actor_loss(self.memory_1, advantage_1,
+                                                          entropy_constant=entropy_constant)
+        actor_p2_loss, actor_p2_entropy_loss = actor_loss(self.memory_2, advantage_2,
+                                                          entropy_constant=entropy_constant)
+        actor_loss_val = actor_p1_loss + actor_p2_loss + actor_p1_entropy_loss + actor_p2_entropy_loss
 
         self.optimizer.zero_grad()
         self.actor_opt.zero_grad()

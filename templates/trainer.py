@@ -1,14 +1,16 @@
 from game.game import Quoridor
+from easy_test_game.easy_test_game import EasyGame
 from parameters import Parameters
 import numpy as np
 from models.memory import Memory
-from game.shortest_path_lp import ShortestPathBot
+from game.shortest_path import ShortestPathBot
 from templates.player import play_game
-import time
 
 parameters = Parameters()
-games_per_iter = parameters.backprops_per_worker
+games_per_iter = parameters.games_between_backprops
 random_proportion = parameters.random_proportion
+
+PLAY_QUORIDOR = parameters.play_quoridor
 
 
 class Trainer:
@@ -22,15 +24,21 @@ class Trainer:
         """
 
         # define game
-        self.game = Quoridor()
+        if PLAY_QUORIDOR:
+            self.game = Quoridor()
+        else:
+            self.game = EasyGame()
 
         # define memory for each bot
         self.memory_1 = Memory(number_other_info=number_other_info)
         self.memory_2 = Memory(number_other_info=number_other_info)
 
         # create shortest path bots (used if game times out)
-        self.spbots = [ShortestPathBot(1, self.game.board_graph), ShortestPathBot(2, self.game.board_graph)]
-        
+        if PLAY_QUORIDOR:
+            self.spbots = [ShortestPathBot(1, self.game.board_graph), ShortestPathBot(2, self.game.board_graph)]
+        else:
+            self.spbots = [None, None]
+
         # stored list of possible moves which can be made
         self.possible_moves = [np.zeros(parameters.bot_out_dimension) for _ in range(parameters.bot_out_dimension)]
         for i in range(parameters.bot_out_dimension):
@@ -107,6 +115,8 @@ class Trainer:
         name: name to save to.
         """
 
+        print_iteration('epoch', 'move legality', 'average reward', 'game len')
+
         # define timing trackers
         time_playing = 0.
         time_learning = 0.
@@ -127,38 +137,20 @@ class Trainer:
         for j in range(iterations // save_freq):
             for i in range(save_freq):
                 self.reset_memories()
-                if get_time_info:
-                    t0 = time.time()
 
                 # run as many games as desired
                 for k in range(games_per_iter):
-                    game_time, on_time, off_time, m_time, ill_time, cw_time, wh_time = self.play_game(info=[j, i, k])
-                    print('completed a game')
+                    game_info = self.play_game(info=[j * save_freq + i])
+                    # print_iteration()
 
                     # save memory
                     self.log_memories()
-
-                    # handle timing
-                    if get_time_info:
-                        game_processing_time += game_time
-                        on_policy_time += on_time
-                        off_policy_time += off_time
-                        moving_time += m_time
-                        illegal_move_handling_time += ill_time
-                        checking_winner_time += cw_time
-                        wall_handling_time += wh_time
-                if get_time_info:
-                    t1 = time.time()
+                print_iteration(i, game_info['percentage_legal_moves'], game_info['average_reward'],
+                                game_info['game_length'])
 
                 # do backpropagation
                 loss = self.learn()
                 losses += loss
-
-                # handle timing
-                if get_time_info:
-                    t2 = time.time()
-                    time_playing += t1 - t0
-                    time_learning += t2 - t1
 
             # save the model
             print('saving iteration {}'.format(j * save_freq))
@@ -184,3 +176,10 @@ class Trainer:
         np.savetxt("game_samples/{}moves_p2.csv".format(name), p2_actions, delimiter=",")
         np.savetxt("game_samples/{}rewards_p1.csv".format(name), p1_rewards, delimiter=",")
         np.savetxt("game_samples/{}rewards_p2.csv".format(name), p2_rewards, delimiter=",")
+
+
+def print_iteration(*args):
+    printstring = ''
+    for arg in args:
+        printstring += str(arg).ljust(10)[0:10] + '\t\t'
+    print(printstring)

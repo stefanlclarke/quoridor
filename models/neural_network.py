@@ -29,6 +29,10 @@ class NN(nn.Module):
     def pull(self, model):
         self.load_state_dict(model.state_dict())
 
+    def zero_all_parameters(self):
+        for param in self.parameters():
+            param.data.zero_()
+
 
 class ConvNN(nn.Module):
     def __init__(self, conv_sidelen, conv_in_channels, conv_internal_channels,
