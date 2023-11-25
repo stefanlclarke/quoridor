@@ -1,13 +1,18 @@
 from trainers.ac_trainer import ACTrainer
 import time
+from parameters import Parameters
+
+parameters = Parameters()
+n_total = parameters.epochs
+save_every = parameters.save_every
+print_every = parameters.print_every
 
 trainer = ACTrainer()
 get_time_info = True
 
 t0 = time.time()
 time_playing, time_learning, game_processing_time, on_policy_time, off_policy_time, moving_time, \
-    illegal_move_handling_time, checking_winner_time, wall_handling_time = trainer.train(1000, 100, 'TEST',
-                                                                                         get_time_info=get_time_info)
+    illegal_move_handling_time, checking_winner_time, wall_handling_time = trainer.train(n_total, save_every, 'ac_25_Nov', get_time_info=get_time_info, print_every=print_every)
 t1 = time.time()
 
 if get_time_info:

@@ -6,7 +6,7 @@ from game.move_reformatter import *
 from game.shortest_path import ShortestPathBot
 import time
 from optimizers.shared_adam import SharedAdam
-from trainers.ac_worker import ACWorker
+from __legacy2.ac_worker import ACWorker
 import torch.multiprocessing as mp
 from torch.multiprocessing import Pool, Process, set_start_method
 try:

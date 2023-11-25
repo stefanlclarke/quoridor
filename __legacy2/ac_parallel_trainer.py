@@ -1,7 +1,7 @@
 import torch
 from parameters import Parameters
 from optimizers.shared_adam import SharedAdam
-from trainers.ac_worker import ACWorker, WeightClipper
+from __legacy2.ac_worker import ACWorker, WeightClipper
 import torch.multiprocessing as mp
 from loss_functions.sarsa_loss_ac import sarsa_loss_ac
 from loss_functions.actor_loss import actor_loss

@@ -1,7 +1,7 @@
 from parameters import Parameters
 from optimizers.shared_adam import SharedAdam
 from loss_functions.sarsa_loss_simplified import sarsa_loss
-from trainers.q_worker import QWorker
+from __legacy2.q_worker import QWorker
 import torch.multiprocessing as mp
 from torch.multiprocessing import set_start_method
 import torch

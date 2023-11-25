@@ -1,4 +1,4 @@
-from trainers.ac_parallel_trainer import ParallelTrainer
+from __legacy2.ac_parallel_trainer import ParallelTrainer
 from models.critic_models import CriticConv, Critic
 from models.actor_models import Actor
 import time

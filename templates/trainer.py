@@ -9,6 +9,7 @@ from templates.player import play_game
 parameters = Parameters()
 games_per_iter = parameters.games_between_backprops
 random_proportion = parameters.random_proportion
+decrease_epsilon_every = parameters.decrease_epsilon_every
 
 PLAY_QUORIDOR = parameters.play_quoridor
 
@@ -43,6 +44,8 @@ class Trainer:
         self.possible_moves = [np.zeros(parameters.bot_out_dimension) for _ in range(parameters.bot_out_dimension)]
         for i in range(parameters.bot_out_dimension):
             self.possible_moves[i][i] = 1
+
+        self.decrease_epsilon_every = decrease_epsilon_every
 
     def handle_pre_training(self):
         """
@@ -106,7 +109,7 @@ class Trainer:
         """
         raise NotImplementedError()
 
-    def train(self, iterations, save_freq, name, get_time_info=False):
+    def train(self, iterations, save_freq, name, get_time_info=False, print_every=100):
         """
         Runs the full training loop.
 
@@ -115,7 +118,7 @@ class Trainer:
         name: name to save to.
         """
 
-        print_iteration('epoch', 'move legality', 'average reward', 'game len')
+        print_iteration('epoch', 'move legality', 'average reward', 'game len', 'off pol %')
 
         # define timing trackers
         time_playing = 0.
@@ -133,29 +136,38 @@ class Trainer:
 
         losses = 0
 
+        summed_game_info = {'n': 0}
+
         # loop over iterations
-        for j in range(iterations // save_freq):
-            for i in range(save_freq):
-                self.reset_memories()
+        for j in range(iterations):
+            self.reset_memories()
 
-                # run as many games as desired
-                for k in range(games_per_iter):
-                    game_info = self.play_game(info=[j * save_freq + i])
-                    # print_iteration()
+            # run as many games as desired
+            for k in range(games_per_iter):
+                game_info = self.play_game(info=[j // self.decrease_epsilon_every + 1])
 
-                    # save memory
-                    self.log_memories()
-                print_iteration(i, game_info['percentage_legal_moves'], game_info['average_reward'],
-                                game_info['game_length'])
+                add_to_dict_sum(game_info, summed_game_info)
 
-                # do backpropagation
-                loss = self.learn()
-                losses += loss
+                # save memory
+                self.log_memories()
+
+            if j % print_every == 0:
+                print_iteration(j, summed_game_info['percentage_legal_moves'] / summed_game_info['n'],
+                                summed_game_info['average_reward'] / summed_game_info['n'],
+                                summed_game_info['game_length'] / summed_game_info['n'],
+                                summed_game_info['percentage_moves_off_policy'] / summed_game_info['n'])
+                summed_game_info = {'n': 0}
+
+            # do backpropagation
+            loss = self.learn()
+            losses += loss
 
             # save the model
-            print('saving iteration {}'.format(j * save_freq))
-            print('loss {}'.format(loss / save_freq))
-            self.save(name, info=[j, i, k])
+            if j % save_freq == 0:
+                print('saving iteration {}'.format(j * save_freq))
+                print('loss {}'.format(loss / save_freq))
+                print_iteration('epoch', 'move legality', 'average reward', 'game len', 'off pol %')
+                self.save(name, info=[j])
             losses = 0
 
         # if time info is requested return it
@@ -183,3 +195,12 @@ def print_iteration(*args):
     for arg in args:
         printstring += str(arg).ljust(10)[0:10] + '\t\t'
     print(printstring)
+
+
+def add_to_dict_sum(game_info, summed_game_info):
+    for key in game_info.keys():
+        if key in list(summed_game_info.keys()):
+            summed_game_info[key] += game_info[key]
+        else:
+            summed_game_info[key] = game_info[key]
+    summed_game_info['n'] += 1

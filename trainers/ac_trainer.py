@@ -26,6 +26,7 @@ random_proportion = parameters.random_proportion
 entropy_constant = parameters.entropy_constant
 max_grad_norm = parameters.max_grad_norm
 epsilon = parameters.epsilon
+epsilon_decay = parameters.epsilon_decay
 
 
 class ACTrainer(Trainer):
@@ -73,9 +74,9 @@ class ACTrainer(Trainer):
         v = np.random.uniform()
 
         # figure out what the random move is
-        if u < max([epsilon**decay, minimum_epsilon]):
+        if u < max([epsilon * epsilon_decay**decay, minimum_epsilon]):
             random_move = True
-            if v < max([move_prob**decay, minimum_move_prob]):
+            if v < max([move_prob * epsilon_decay**decay, minimum_move_prob]):
                 move = np.random.choice(4)
             else:
                 move = np.random.choice(parameters.bot_out_dimension - 4) + 4

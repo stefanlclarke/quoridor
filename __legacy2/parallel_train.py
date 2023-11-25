@@ -1,4 +1,4 @@
-from trainers.q_parallel_trainer import ParallelTrainer
+from __legacy2.q_parallel_trainer import ParallelTrainer
 from models.q_models import QNet, QNetConv, QNetBot
 import time
 from parameters import Parameters

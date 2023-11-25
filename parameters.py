@@ -9,11 +9,11 @@ class Parameters:
         """
 
         # dictates whether we are testing or not
-        self.play_quoridor = False
+        self.play_quoridor = True
         self.zero_critic = False
 
         # parameters for the game
-        self.board_size = 2
+        self.board_size = 3
         self.number_of_walls = 1
 
         # dimensions of the neural networks
@@ -35,16 +35,16 @@ class Parameters:
         # parameters relating to the actor playing the game
         self.illegal_move_reward = -10 / 40
         self.legal_move_reward = 0
-        self.win_reward = 0 #100 / 100
-        self.max_rounds_per_game = 12 #40
+        self.win_reward = 100 / 100
+        self.max_rounds_per_game = 40
         self.epsilon = 0.4
-        self.epsilon_decay = 0.985
+        self.epsilon_decay = 0.95
         self.move_prob = 0.4
         self.forward_prob = 0.4
         self.move_prob_decay = 1.
         self.gamma = 0.95
-        self.lambd = 0. #0.5
-        self.minimum_epsilon = 0.07
+        self.lambd = 0.5
+        self.minimum_epsilon = 0.05
         self.minimum_move_prob = 0.4
         self.cut_at_random_move = False
         self.random_proportion = 0.4
@@ -69,10 +69,12 @@ class Parameters:
         self.games_between_backprops = 8
         self.backprops_per_worker = 4
         self.epochs = 10000000
-        self.save_every = 20
+        self.save_every = 10000
         self.n_cores = 4
         self.backwards_per_worker = 1
-        self.total_reset_every = 4000
+        self.total_reset_every = None
+        self.print_every = 100
+        self.decrease_epsilon_every = 1000
 
         # storage parameters
         self.save_game_every = 100

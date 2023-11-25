@@ -46,6 +46,7 @@ def play_game(info, memory_1, memory_2, game, on_policy_step, off_policy_step, s
     # tracks legality of moves
     total_legal_moves = 0
     total_reward = 0
+    n_moves_off_policy = 0
 
     while playing:
         ticks += 1
@@ -76,6 +77,7 @@ def play_game(info, memory_1, memory_2, game, on_policy_step, off_policy_step, s
             move, step_info, off_policy = on_policy_step(state, info)
             t1 = time.time()
             on_policy_time += t1 - t0
+            n_moves_off_policy += int(off_policy)
 
         # if number of rounds has been reached play off-policy instead
         if rounds > parameters.max_rounds_per_game:
@@ -139,6 +141,7 @@ def play_game(info, memory_1, memory_2, game, on_policy_step, off_policy_step, s
         'wall_handling_time': wall_handling_time,
         'percentage_legal_moves': total_legal_moves / ticks,
         'average_reward': total_reward / ticks,
-        'game_length': rounds
+        'game_length': rounds,
+        'percentage_moves_off_policy': n_moves_off_policy / ticks
     }
     return output_dict
