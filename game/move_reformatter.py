@@ -1,11 +1,7 @@
 import numpy as np
-from parameters import Parameters
-
-parameters = Parameters()
-BOARD_SIZE = parameters.board_size
 
 
-def move_reformatter(move, flip=False):
+def move_reformatter(move, board_size, flip=False):
 
     """
     converts one-hot move into cartesian move
@@ -25,8 +21,8 @@ def move_reformatter(move, flip=False):
 
     # get move and wall parts of one-hot move
     move_part = move[0:4]
-    wall_part_down = move[4:(BOARD_SIZE - 1)**2 + 4]
-    wall_part_right = move[(BOARD_SIZE - 1)**2 + 4:]
+    wall_part_down = move[4:(board_size - 1)**2 + 4]
+    wall_part_right = move[(board_size - 1)**2 + 4:]
 
     # if moving return cartesian move
     if move_part[0] == 1:
@@ -38,7 +34,7 @@ def move_reformatter(move, flip=False):
     if move_part[3] == 1:
         return np.array([0, -1, 0, 0, 0, 0])
 
-    dim = BOARD_SIZE - 1
+    dim = board_size - 1
 
     # if placing vertical wall handle that
     if (wall_part_down == 0).all():
@@ -73,7 +69,7 @@ def move_reformatter(move, flip=False):
             return np.array([0, 0, m2_flipped, unflipped_m1, 0, 1])
 
 
-def unformatted_move_to_index(move, flip=False):
+def unformatted_move_to_index(move, board_size, flip=False):
 
     """
     takes a cartesian move and returns the index for the equivalent one-hot moves
@@ -109,9 +105,9 @@ def unformatted_move_to_index(move, flip=False):
     wall_orientation = move[4:6]
 
     if flip:
-        wall_pos[0] = (BOARD_SIZE - 1) - wall_pos[0] - 1
+        wall_pos[0] = (board_size - 1) - wall_pos[0] - 1
 
-    binary_wall_pos = wall_pos[0] * (BOARD_SIZE - 1) + wall_pos[1]
+    binary_wall_pos = wall_pos[0] * (board_size - 1) + wall_pos[1]
 
     # vertical wall
     if wall_orientation[1] == 1:
@@ -119,6 +115,6 @@ def unformatted_move_to_index(move, flip=False):
 
     # horizontal wall
     elif wall_orientation[0] == 1:
-        return int(4 + (BOARD_SIZE - 1)**2 + binary_wall_pos)
+        return int(4 + (board_size - 1)**2 + binary_wall_pos)
 
     raise ValueError("something went wrong")

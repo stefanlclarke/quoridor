@@ -1,21 +1,16 @@
 from game.game import Quoridor
 from easy_test_game.easy_test_game import EasyGame
-from parameters import Parameters
 import numpy as np
 from models.memory import Memory
 from game.shortest_path import ShortestPathBot
 from templates.player import play_game
 
-parameters = Parameters()
-games_per_iter = parameters.games_between_backprops
-random_proportion = parameters.random_proportion
-decrease_epsilon_every = parameters.decrease_epsilon_every
-
-PLAY_QUORIDOR = parameters.play_quoridor
+PLAY_QUORIDOR = True
 
 
 class Trainer:
-    def __init__(self, number_other_info=2):
+    def __init__(self, board_size, start_walls, number_other_info=2, decrease_epsilon_every=100,
+                 random_proportion=0.4, games_per_iter=100):
         """
         Template class for training AI on Quoridor.
 
@@ -26,9 +21,14 @@ class Trainer:
 
         # define game
         if PLAY_QUORIDOR:
-            self.game = Quoridor()
+            self.game = Quoridor(board_size, start_walls)
         else:
-            self.game = EasyGame()
+            self.game = EasyGame(board_size)
+
+        # we need this
+        self.bot_out_dimension = 4 + 2 * (self.game.board_size - 1)**2
+        self.random_proportion = random_proportion
+        self.games_per_iter = games_per_iter
 
         # define memory for each bot
         self.memory_1 = Memory(number_other_info=number_other_info)
@@ -41,8 +41,8 @@ class Trainer:
             self.spbots = [None, None]
 
         # stored list of possible moves which can be made
-        self.possible_moves = [np.zeros(parameters.bot_out_dimension) for _ in range(parameters.bot_out_dimension)]
-        for i in range(parameters.bot_out_dimension):
+        self.possible_moves = [np.zeros(self.bot_out_dimension) for _ in range(self.bot_out_dimension)]
+        for i in range(self.bot_out_dimension):
             self.possible_moves[i][i] = 1
 
         self.decrease_epsilon_every = decrease_epsilon_every
@@ -143,7 +143,7 @@ class Trainer:
             self.reset_memories()
 
             # run as many games as desired
-            for k in range(games_per_iter):
+            for k in range(self.games_per_iter):
                 game_info = self.play_game(info=[j // self.decrease_epsilon_every + 1])
 
                 add_to_dict_sum(game_info, summed_game_info)

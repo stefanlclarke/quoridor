@@ -1,18 +1,22 @@
 from trainers.ac_trainer import ACTrainer
 import time
-from parameters import Parameters
 
-parameters = Parameters()
-n_total = parameters.epochs
-save_every = parameters.save_every
-print_every = parameters.print_every
 
-trainer = ACTrainer()
+critic_info = {'input_dim': 3**2 * 4 + 2 * (1 + 1), 'critic_size_hidden': 128, 'critic_num_hidden': 2}
+actor_info = {'input_dim': 3**2 * 4 + 2 * (1 + 1), 'actor_num_hidden': 2, 'actor_size_hidden': 128,
+              'actor_output_dim': 4 + 2 * (3 - 1)**2, 'softmax_regularizer': 1}
+
+trainer = ACTrainer(board_size=3, start_walls=1, critic_info=critic_info, actor_info=actor_info,
+                    random_proportion=0.4, games_per_iter=100, decrease_epsilon_every=100,
+                    qnet=None, actor=None, iterations_only_actor_train=0, convolutional=False, learning_rate=1e-4,
+                    epsilon_decay=0.95, epsilon=0.4, minimum_epsilon=0.05, entropy_constant=1, max_grad_norm=1e5)
 get_time_info = True
 
 t0 = time.time()
 time_playing, time_learning, game_processing_time, on_policy_time, off_policy_time, moving_time, \
-    illegal_move_handling_time, checking_winner_time, wall_handling_time = trainer.train(n_total, save_every, 'ac_25_Nov', get_time_info=get_time_info, print_every=print_every)
+    illegal_move_handling_time, checking_winner_time, wall_handling_time = trainer.train(100, 10, 'ac_25_Nov',
+                                                                                         get_time_info=get_time_info,
+                                                                                         print_every=10)
 t1 = time.time()
 
 if get_time_info:

@@ -1,13 +1,11 @@
 import numpy as np
 import time
-from parameters import Parameters
 from game.move_reformatter import unformatted_move_to_index
-parameters = Parameters()
-random_proportion = parameters.random_proportion
 
 
 def play_game(info, memory_1, memory_2, game, on_policy_step, off_policy_step, spbots, printing=False,
-              random_start=True):
+              random_start=True, random_proportion=0.4, win_speed_param=1, max_rounds_per_game=40,
+              win_reward=1):
 
     """
     Plays a game and stores all relevant information to memory.
@@ -16,6 +14,9 @@ def play_game(info, memory_1, memory_2, game, on_policy_step, off_policy_step, s
     When max_rounds_per_game is reached the game is played out using
     the shortest_path policy.
     """
+
+    # we need this
+    bot_out_dimension = 4 + 2 * (game.board_size - 1)**2
 
     # stores amount of time spent in each phase of handling the game
     game_processing_time = 0.
@@ -73,18 +74,18 @@ def play_game(info, memory_1, memory_2, game, on_policy_step, off_policy_step, s
         state = game.get_state(flip=flip)
 
         # if max_rounds not yet reached allow the agent to play on policy
-        if rounds <= parameters.max_rounds_per_game:
+        if rounds <= max_rounds_per_game:
             move, step_info, off_policy = on_policy_step(state, info)
             t1 = time.time()
             on_policy_time += t1 - t0
             n_moves_off_policy += int(off_policy)
 
         # if number of rounds has been reached play off-policy instead
-        if rounds > parameters.max_rounds_per_game:
+        if rounds > max_rounds_per_game:
             unformatted_move = spbots[player - 1].move(game.get_state(flatten=False)[0],
                                                        game.board_graph)
-            move_ind = unformatted_move_to_index(unformatted_move, flip=flip)
-            move = np.zeros(parameters.bot_out_dimension)
+            move_ind = unformatted_move_to_index(unformatted_move, board_size=game.board_size, flip=flip)
+            move = np.zeros(bot_out_dimension)
             move[move_ind] = 1
             off_policy = True
             step_info = off_policy_step(state, move_ind, info)
@@ -104,15 +105,15 @@ def play_game(info, memory_1, memory_2, game, on_policy_step, off_policy_step, s
         if winner != 0:
             playing = False
             if winner == 1:
-                memory_1.rewards[-1] = memory_1.rewards[-1] + parameters.win_reward * \
-                    (1 + parameters.win_speed_param / rounds)
-                memory_2.rewards[-1] = memory_2.rewards[-1] - parameters.win_reward * \
-                    (1 + parameters.win_speed_param / rounds)
+                memory_1.rewards[-1] = memory_1.rewards[-1] + win_reward * \
+                    (1 + win_speed_param / rounds)
+                memory_2.rewards[-1] = memory_2.rewards[-1] - win_reward * \
+                    (1 + win_speed_param / rounds)
             if winner == 2:
-                memory_1.rewards[-1] = memory_1.rewards[-1] - parameters.win_reward * \
-                    (1 + parameters.win_speed_param / rounds)
-                memory_2.rewards[-1] = memory_2.rewards[-1] + parameters.win_reward * \
-                    (1 + parameters.win_speed_param / rounds)
+                memory_1.rewards[-1] = memory_1.rewards[-1] - win_reward * \
+                    (1 + win_speed_param / rounds)
+                memory_2.rewards[-1] = memory_2.rewards[-1] + win_reward * \
+                    (1 + win_speed_param / rounds)
 
         # handle timing trackers
         t2 = time.time()

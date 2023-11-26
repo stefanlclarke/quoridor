@@ -4,16 +4,6 @@ import torch.nn as nn
 from models.neural_network import NN
 from templates.agent import QuoridoorAgent
 
-from parameters import Parameters
-parameters = Parameters()
-
-# parameters
-actor_num_hidden = parameters.actor_num_hidden
-actor_size_hidden = parameters.actor_size_hidden
-input_dim = parameters.bot_in_dimension
-actor_output_dim = parameters.bot_out_dimension
-softmax_regularizer = parameters.softmax_regularizer
-
 
 class Actor(NN):
     """
@@ -23,9 +13,11 @@ class Actor(NN):
     save_name: name of the save file to be loaded.
     """
 
-    def __init__(self, save_name=None):
+    def __init__(self, actor_num_hidden, actor_size_hidden, input_dim, actor_output_dim, softmax_regularizer,
+                 save_name=None):
         self.input_size = input_dim
         self.actor_output_dim = actor_output_dim
+        self.softmax_regularizer = softmax_regularizer
         super().__init__(self.input_size, actor_size_hidden, actor_num_hidden, actor_output_dim)
         self.softmax = nn.Softmax(dim=0)
 
@@ -34,7 +26,7 @@ class Actor(NN):
 
     def forward(self, x):
         output = self.feed_forward(x)
-        return softmax_regularizer * self.softmax(output) + (1 - softmax_regularizer) / self.actor_output_dim
+        return self.softmax_regularizer * self.softmax(output) + (1 - self.softmax_regularizer) / self.actor_output_dim
 
     def move(self, x):
         probabilities = self.forward(x)
@@ -47,7 +39,8 @@ class Actor(NN):
 
 class ActorBot(QuoridoorAgent):
 
-    def __init__(self, save_name, good=False):
+    def __init__(self, actor_num_hidden, actor_size_hidden, input_dim, actor_output_dim, softmax_regularizer,
+                 save_name, good=False):
         """
         Agent for running the Q network class in testing.
 
@@ -55,7 +48,7 @@ class ActorBot(QuoridoorAgent):
         """
 
         super().__init__()
-        self.net = Actor()
+        self.net = Actor(actor_num_hidden, actor_size_hidden, input_dim, actor_output_dim, softmax_regularizer)
         if not good:
             self.net.load_state_dict(torch.load('./saves/{}'.format(save_name), map_location=torch.device('cpu')))
         if good:

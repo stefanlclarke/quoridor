@@ -1,18 +1,13 @@
 import torch
 import numpy as np
-from parameters import Parameters
 
 if torch.cuda.is_available():
     device = 'cuda:0'
 else:
     device = 'cpu'
 
-parameters = Parameters()
-gamma = parameters.gamma
-lambd = parameters.lambd
 
-
-def sarsa_loss(memory, net, epoch, possible_moves, printing=False, return_advantage=False):
+def sarsa_loss(memory, net, epoch, possible_moves, lambd, gamma, printing=False, return_advantage=False):
 
     """
     calculates the loss on memory given network net

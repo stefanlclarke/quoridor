@@ -1,23 +1,10 @@
 from models.neural_network import ConvNN, NN
 
-from parameters import Parameters
-parameters = Parameters()
-
-critic_num_hidden = parameters.critic_num_hidden
-critic_size_hidden = parameters.critic_size_hidden
-input_dim = parameters.bot_in_dimension
-actor_output_dim = parameters.bot_out_dimension
-sidelen = parameters.sidelen
-conv_internal_channels = parameters.conv_internal_channels
-linear_in_dim = 2 * parameters.number_of_walls + 2
-num_conv = parameters.num_conv
-convolutional = parameters.convolutional
-kernel_size = parameters.conv_kernel_size
-
 
 class CriticConv(ConvNN):
 
-    def __init__(self):
+    def __init__(self, critic_num_hidden, critic_size_hidden, input_dim, actor_output_dim, sidelen,
+                 conv_internal_channels, linear_in_dim, num_conv, kernel_size):
         """
         Q network class for learning via Sarsa Lambda with convolutional layers.
         """
@@ -38,7 +25,7 @@ class CriticConv(ConvNN):
 
 class Critic(NN):
 
-    def __init__(self):
+    def __init__(self, input_dim, critic_size_hidden, critic_num_hidden):
         """
         Q network class for learning via Sarsa Lambda.
         """

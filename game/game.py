@@ -3,13 +3,8 @@ import copy
 import time
 from game.game_helper_functions import move_piece, place_wall_with_check, check_win, get_legal_moves, flip_board
 from game.graph_search import BoardGraph
-from parameters import Parameters
 from game.printing import get_printable_board
 from game.move_reformatter import move_reformatter, unformatted_move_to_index
-
-parameters = Parameters()
-BOARD_SIZE = parameters.board_size
-START_WALLS = parameters.number_of_walls
 
 
 class Player:
@@ -30,7 +25,8 @@ class Player:
 
 
 class Quoridor:
-    def __init__(self, p1_start=np.array([0, BOARD_SIZE // 2]), p2_start=np.array([BOARD_SIZE - 1, BOARD_SIZE // 2])):
+    def __init__(self, board_size, start_walls, p1_start=None, p2_start=None, legal_move_reward=0.,
+                 illegal_move_reward=-0.25):
 
         """
         class storing an instance of the game
@@ -44,20 +40,33 @@ class Quoridor:
         """
 
         # size of board
-        self.board_size = BOARD_SIZE
+        self.board_size = board_size
+
+        # number of starting walls for each player
+        self.start_walls = start_walls
+
+        if p1_start is None:
+            self.p1_start = np.array([0, self.board_size // 2])
+        else:
+            self.p1_start = p1_start
+
+        if p2_start is None:
+            self.p2_start = np.array([self.board_size - 1, self.board_size // 2])
+        else:
+            self.p2_start = p2_start
 
         # array storing state of board
-        self.board = np.zeros((BOARD_SIZE, BOARD_SIZE, 4))
+        self.board = np.zeros((self.board_size, self.board_size, 4))
 
         # lost storing both player classes
-        self.players = [Player(p1_start, START_WALLS), Player(p2_start, START_WALLS)]
+        self.players = [Player(self.p1_start, self.start_walls), Player(self.p2_start, self.start_walls)]
 
         # number of players in the game
         self.num_players = len(self.players)
 
         # update board array to have correct player information
-        self.board[p1_start[0], p1_start[1], 2] = 1
-        self.board[p2_start[0], p2_start[1], 3] = 1
+        self.board[self.p1_start[0], self.p1_start[1], 2] = 1
+        self.board[self.p2_start[0], self.p2_start[1], 3] = 1
 
         # keeps track of who's move it is
         self.moving_now = 0
@@ -65,15 +74,15 @@ class Quoridor:
         # boolean tracking whether the game is currently in progress
         self.playing = True
 
-        # number of starting walls for each player
-        self.start_walls = START_WALLS
-
         # keeps track of the winner
         self.winner = 0
 
         # board and copy of the board stored in graph form (to be added later)
-        self.board_graph = BoardGraph()
-        self.copy_board_graph = BoardGraph()
+        self.board_graph = BoardGraph(self.board_size)
+        self.copy_board_graph = BoardGraph(self.board_size)
+
+        self.legal_move_reward = legal_move_reward
+        self.illegal_move_reward = illegal_move_reward
 
     def move(self, command, get_time_info=False, reformat_from_onehot=False, flip_reformat=False):
 
@@ -91,7 +100,7 @@ class Quoridor:
 
         # reformat if needed
         if reformat_from_onehot:
-            command = move_reformatter(command, flip=flip_reformat)
+            command = move_reformatter(command, self.board_size, flip=flip_reformat)
 
         # set trackers for what stage of the move we are in
         moving = 0.
@@ -147,11 +156,11 @@ class Quoridor:
         # if legal give a reward for playing a legal move
         if legal_move or legal_wall:
             legal = True
-            reward += parameters.legal_move_reward
+            reward += self.legal_move_reward
 
         # if no legal move was played add a penalty
         else:
-            reward += parameters.illegal_move_reward
+            reward += self.illegal_move_reward
             legal = False
 
         # time tracker
@@ -186,7 +195,7 @@ class Quoridor:
 
             # make sure the true move is in the correct format
             if reformat_from_onehot:
-                true_move_index = unformatted_move_to_index(true_move, flip=flip_reformat)
+                true_move_index = unformatted_move_to_index(true_move, self.board_size, flip=flip_reformat)
                 true_move = np.zeros(command.shape)
                 true_move[true_move_index] = 1
 
@@ -263,16 +272,16 @@ class Quoridor:
 
         # if random positions randomly placeplayers and walls
         if random_positions:
-            p1_start = np.array([int(np.random.choice(int(np.floor(BOARD_SIZE / 2)))),
-                                 int(np.random.choice(int(BOARD_SIZE)))])
-            p2_start = np.array([int(BOARD_SIZE - 1 - np.random.choice(int(np.floor(BOARD_SIZE / 2)))),
-                                 int(np.random.choice(int(BOARD_SIZE)))])
-            self.__init__(p1_start, p2_start)
+            p1_start = np.array([int(np.random.choice(int(np.floor(self.board_size / 2)))),
+                                 int(np.random.choice(int(self.board_size)))])
+            p2_start = np.array([int(self.board_size - 1 - np.random.choice(int(np.floor(self.board_size / 2)))),
+                                 int(np.random.choice(int(self.board_size)))])
+            self.__init__(self.board_size, self.start_walls, p1_start, p2_start)
             self.randomly_place_walls()
 
         # otherwise just restart like normal
         else:
-            self.__init__()
+            self.__init__(self.board_size, self.start_walls)
 
     def copy_game(self, other_game):
 
@@ -338,8 +347,8 @@ class Quoridor:
         """
 
         # get the maximum number of walls allowed to each player
-        number_of_walls_from_1 = np.random.choice(self.start_walls)
-        number_of_walls_from_2 = np.random.choice(self.start_walls)
+        number_of_walls_from_1 = np.random.choice(self.start_walls + 1)
+        number_of_walls_from_2 = np.random.choice(self.start_walls + 1)
 
         # randomly place the necessary walls for each player
         for i in range(number_of_walls_from_1):
@@ -382,14 +391,14 @@ class Quoridor:
         Converts the flattened satte-vector into board, p1_loc, p2_loc, p1_walls, p2_walls
         """
 
-        board_part = state_vector[:4 * BOARD_SIZE**2]
-        wall_part = state_vector[4 * BOARD_SIZE**2:]
-        wall_part_p1 = wall_part[:START_WALLS]
-        wall_part_p2 = wall_part[START_WALLS:]
+        board_part = state_vector[:4 * self.board_size**2]
+        wall_part = state_vector[4 * self.board_size**2:]
+        wall_part_p1 = wall_part[:self.start_walls]
+        wall_part_p2 = wall_part[self.start_walls:]
         n_walls_p1 = np.where(wall_part_p1 == 1)[0]
         n_walls_p2 = np.where(wall_part_p2 == 1)[0]
 
-        board = board_part.reshape((BOARD_SIZE, BOARD_SIZE, 4))
+        board = board_part.reshape((self.board_size, self.board_size, 4))
         p1_position = np.where(board[:, :, 2] == 1)
         p1_position = np.array([p1_position[0], p1_position[1]])
         p2_position = np.where(board[:, :, 3] == 1)

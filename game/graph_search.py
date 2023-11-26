@@ -1,15 +1,11 @@
 import numpy as np
-from parameters import Parameters
 import networkx as nx
 from matplotlib import pyplot as plt
 import copy
 
-parameters = Parameters()
-BOARD_SIZE = parameters.board_size
-
 
 class BoardGraph:
-    def __init__(self):
+    def __init__(self, board_size):
 
         """
         A stored graph representing all routes possible in the game, designed for fast searching over possible moves
@@ -19,25 +15,29 @@ class BoardGraph:
         self.board = nx.Graph()
         self.graph = [nx.Graph(), nx.Graph()]
 
+        self.board_size = board_size
+
         # add all routes to the graph
         for k in range(2):
-            self.graph[k].add_nodes_from([(i, j) for i in range(BOARD_SIZE) for j in range(BOARD_SIZE)])
-            self.graph[k].add_edges_from([((i, j), (i + 1, j)) for i in range(BOARD_SIZE - 1)
-                                          for j in range(BOARD_SIZE)])
-            self.graph[k].add_edges_from([((i, j), (i, j + 1)) for i in range(BOARD_SIZE)
-                                          for j in range(BOARD_SIZE - 1)])
+            self.graph[k].add_nodes_from([(i, j) for i in range(self.board_size) for j in range(self.board_size)])
+            self.graph[k].add_edges_from([((i, j), (i + 1, j)) for i in range(self.board_size - 1)
+                                          for j in range(self.board_size)])
+            self.graph[k].add_edges_from([((i, j), (i, j + 1)) for i in range(self.board_size)
+                                          for j in range(self.board_size - 1)])
             if k == 1:
-                self.graph[k].add_nodes_from([(-1, BOARD_SIZE // 2)])
-                self.graph[k].add_edges_from([((-1, BOARD_SIZE // 2), (0, j)) for j in range(BOARD_SIZE)])
+                self.graph[k].add_nodes_from([(-1, self.board_size // 2)])
+                self.graph[k].add_edges_from([((-1, self.board_size // 2), (0, j)) for j in range(self.board_size)])
             else:
-                self.graph[k].add_nodes_from([(BOARD_SIZE, BOARD_SIZE // 2)])
-                self.graph[k].add_edges_from([((BOARD_SIZE, BOARD_SIZE // 2), (BOARD_SIZE - 1, j))
-                                              for j in range(BOARD_SIZE)])
+                self.graph[k].add_nodes_from([(self.board_size, self.board_size // 2)])
+                self.graph[k].add_edges_from([((self.board_size, self.board_size // 2), (self.board_size - 1, j))
+                                              for j in range(self.board_size)])
 
         # add all routes to the board
-        self.board.add_nodes_from([(i, j) for i in range(BOARD_SIZE) for j in range(BOARD_SIZE)])
-        self.board.add_edges_from([((i, j), (i + 1, j)) for i in range(BOARD_SIZE - 1) for j in range(BOARD_SIZE)])
-        self.board.add_edges_from([((i, j), (i, j + 1)) for i in range(BOARD_SIZE) for j in range(BOARD_SIZE - 1)])
+        self.board.add_nodes_from([(i, j) for i in range(self.board_size) for j in range(self.board_size)])
+        self.board.add_edges_from([((i, j), (i + 1, j)) for i in range(self.board_size - 1) for j in
+                                   range(self.board_size)])
+        self.board.add_edges_from([((i, j), (i, j + 1)) for i in range(self.board_size)
+                                   for j in range(self.board_size - 1)])
 
         # stores best move at any given time
         self.direction_graph = [nx.DiGraph(), nx.DiGraph()]
@@ -46,15 +46,17 @@ class BoardGraph:
         for k in range(2):
             self.direction_graph[k].add_nodes_from(self.graph[k])
             if k == 0:
-                self.direction_graph[k].add_edges_from([((i, j), (i + 1, j)) for j in range(BOARD_SIZE)
-                                                        for i in range(BOARD_SIZE - 1)])
-                self.direction_graph[k].add_edges_from([((BOARD_SIZE - 1, j), (BOARD_SIZE, BOARD_SIZE // 2))
-                                                        for j in range(BOARD_SIZE)])
+                self.direction_graph[k].add_edges_from([((i, j), (i + 1, j)) for j in range(self.board_size)
+                                                        for i in range(self.board_size - 1)])
+                self.direction_graph[k].add_edges_from([((self.board_size - 1, j),
+                                                         (self.board_size, self.board_size // 2))
+                                                        for j in range(self.board_size)])
             else:
-                self.direction_graph[k].add_edges_from([((i + 1, j), (i, j)) for j in range(BOARD_SIZE)
-                                                        for i in range(BOARD_SIZE - 1)])
-                self.direction_graph[k].add_edges_from([((0, j), (-1, BOARD_SIZE // 2)) for i in range(BOARD_SIZE)
-                                                        for j in range(BOARD_SIZE)])
+                self.direction_graph[k].add_edges_from([((i + 1, j), (i, j)) for j in range(self.board_size)
+                                                        for i in range(self.board_size - 1)])
+                self.direction_graph[k].add_edges_from([((0, j), (-1, self.board_size // 2)) for i in
+                                                        range(self.board_size)
+                                                        for j in range(self.board_size)])
 
         # initialize paths on the direction graphs
         self.initialize_paths()
@@ -64,13 +66,14 @@ class BoardGraph:
         """
         Initializes best paths on the current board
         """
-        self.path_lengths = [nx.shortest_path_length(self.direction_graph[0], target=(BOARD_SIZE, BOARD_SIZE // 2),
+        self.path_lengths = [nx.shortest_path_length(self.direction_graph[0],
+                                                     target=(self.board_size, self.board_size // 2),
                                                      method='dijkstra'),
-                             nx.shortest_path_length(self.direction_graph[1], target=(-1, BOARD_SIZE // 2),
+                             nx.shortest_path_length(self.direction_graph[1], target=(-1, self.board_size // 2),
                                                      method='dijkstra')]
         self.shortest_paths = [nx.shortest_path(self.direction_graph[0],
-                                                target=(BOARD_SIZE, BOARD_SIZE // 2), method='dijkstra'),
-                               nx.shortest_path(self.direction_graph[1], target=(-1, BOARD_SIZE // 2),
+                                                target=(self.board_size, self.board_size // 2), method='dijkstra'),
+                               nx.shortest_path(self.direction_graph[1], target=(-1, self.board_size // 2),
                                                 method='dijkstra')]
         self.dependent_edges = [{}, {}]
         for k in range(2):
@@ -148,7 +151,7 @@ class BoardGraph:
             for edge in edges_to_cut:
                 vertices_to_reconfigure += list(dependent_vertices[frozenset(edge)])
             for vertex in vertices_to_reconfigure:
-                path_lengths[vertex] = 2 * BOARD_SIZE**2
+                path_lengths[vertex] = 2 * self.board_size**2
                 neighbours_of_cut_vertices += graph[vertex]
                 vertex_edges = direction_graph[vertex]
                 direction_graph.remove_edges_from([(vertex, x) for x in vertex_edges])

@@ -1,7 +1,6 @@
 import numpy as np
 import torch
 from templates.trainer import Trainer
-from parameters import Parameters
 from models.q_models import QNet
 import torch.optim as optim
 from loss_functions.sarsa_loss_simplified import sarsa_loss
@@ -11,31 +10,37 @@ if torch.cuda.is_available():
 else:
     device = 'cpu'
 
-parameters = Parameters()
-gamma = parameters.gamma
-lambd = parameters.lambd
-learning_rate = parameters.learning_rate
-epsilon = parameters.epsilon
-move_prob = parameters.move_prob
-minimum_epsilon = parameters.minimum_epsilon
-minimum_move_prob = parameters.minimum_move_prob
-random_proportion = parameters.random_proportion
-
 
 class QTrainer(Trainer):
-    def __init__(self, net=None):
+    def __init__(self, board_size, start_walls, decrease_epsilon_every, random_proportion, games_per_iter,
+                 qnet_parameters, learning_rate, epsilon, minimum_epsilon, minimum_move_prob, lambd, gamma,
+                 save_name, epsilon_decay, net=None):
         """
         Handles the training of a Q-network using Sarsa Lambda.
         """
 
         # initialize superclass
-        super().__init__()
+        super().__init__(board_size=board_size,
+                         start_walls=start_walls,
+                         number_other_info=2,
+                         decrease_epsilon_every=decrease_epsilon_every,
+                         random_proportion=random_proportion,
+                         games_per_iter=games_per_iter)
 
         # decide on type of neural network to use
         if net is None:
-            self.net = QNet().to(device)
+            self.net = QNet(**qnet_parameters).to(device)
         else:
             self.net = net.to(device)
+        self.qnet_parameters = qnet_parameters
+        self.bot_out_dimension = qnet_parameters['actor_output_dim']
+        self.epsilon = epsilon
+        self.minimum_epsilon = minimum_epsilon
+        self.minimum_move_prob = minimum_move_prob
+        self.lambd = lambd
+        self.gamma = gamma
+        self.save_name = save_name
+        self.epsilon_decay = epsilon_decay
 
         # initialize optimizer
         self.optimizer = optim.Adam(self.net.parameters(), lr=learning_rate)
@@ -54,7 +59,6 @@ class QTrainer(Trainer):
 
         returns:
             move, [move value, best possible move value], bool (random move -> False)
-        
         """
 
         # get the lr decay
@@ -65,7 +69,7 @@ class QTrainer(Trainer):
 
         # get values of all potential moves
         values = []
-        for i in range(parameters.bot_out_dimension):
+        for i in range(self.bot_out_dimension):
             values.append(self.net.forward(torch.cat([torch.from_numpy(state),
                                                       torch.from_numpy(self.possible_moves[i])]).to(device).float()))
         values_np = torch.cat(values).detach().cpu().numpy()
@@ -79,12 +83,12 @@ class QTrainer(Trainer):
         v = np.random.uniform()
 
         # figure out what the random move is
-        if u < max([epsilon**decay, minimum_epsilon]):
+        if u < max([self.epsilon * self.epsilon_decay**decay, self.minimum_epsilon]):
             random_move = True
-            if v < max([move_prob**decay, minimum_move_prob]):
+            if v < max([0, self.minimum_move_prob]):
                 move = np.random.choice(4)
             else:
-                move = np.random.choice(parameters.bot_out_dimension - 4) + 4
+                move = np.random.choice(self.bot_out_dimension - 4) + 4
         else:
             random_move = False
             move = argmax
@@ -99,7 +103,7 @@ class QTrainer(Trainer):
 
         # work out the calues of possible moves
         values = []
-        for i in range(parameters.bot_out_dimension):
+        for i in range(self.bot_out_dimension):
             values.append(self.net.forward(torch.cat([torch.from_numpy(state),
                                                       torch.from_numpy(self.possible_moves[i])]).to(device).float()))
         values_np = torch.cat(values).detach().cpu().numpy()
@@ -115,8 +119,10 @@ class QTrainer(Trainer):
         """
 
         # get losses
-        p1_loss = sarsa_loss(self.memory_1, self.net, 0, self.possible_moves)
-        p2_loss = sarsa_loss(self.memory_2, self.net, 0, self.possible_moves)
+        p1_loss = sarsa_loss(memory=self.memory_1, net=self.net, epoch=0, possible_moves=self.possible_moves,
+                             lambd=self.lambd, gamma=self.gamma)
+        p2_loss = sarsa_loss(self.memory_2, self.net, epoch=0, possible_moves=self.possible_moves,
+                             lambd=self.lambd, gamma=self.gamma)
 
         # get total loss
         loss = p1_loss + p2_loss
@@ -135,4 +141,4 @@ class QTrainer(Trainer):
         """
 
         j = info[0]
-        torch.save(self.net.state_dict(), './saves/{}'.format(name + str(j)))
+        torch.save(self.net.state_dict(), self.save_name + str(j))

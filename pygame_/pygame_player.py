@@ -2,17 +2,12 @@ import numpy as np
 from game.game import Quoridor
 from game.game_helper_functions import check_input_move_legal
 from game.printing import get_printable_board
-from parameters import Parameters
 from game.move_reformatter import move_reformatter
 import pygame
 import sys
 
-parameters = Parameters()
-
-BOARD_SIZE = parameters.board_size
 WINDOW_SIZE = 600
 FRAME_RATE = 10
-SQUARE_SIZE = WINDOW_SIZE // BOARD_SIZE
 SQUARE_COLOUR_1 = (225, 203, 142)
 SQUARE_COLOUR_2 = (255, 255, 204)
 AGENT_1_COLOUR = (255, 0, 0)
@@ -28,7 +23,7 @@ HOVER_RECTANGLE_COLOUR = (100, 100, 100)
 
 
 class PygamePlayer:
-    def __init__(self, agent_1='human', agent_2='human'):
+    def __init__(self, board_size, start_walls, agent_1='human', agent_2='human'):
 
         """
         Interface for running the game using pygame.
@@ -38,6 +33,11 @@ class PygamePlayer:
 
         agent_1 moves first.
         """
+
+        # game parameters
+        self.board_size = board_size
+        self.start_walls = start_walls
+        self.square_size = WINDOW_SIZE // self.board_size
 
         # set up pygame display
         pygame.init()
@@ -65,7 +65,7 @@ class PygamePlayer:
             self.agent_2_output = agent_2.output_type
 
         # define the game
-        self.game = Quoridor()
+        self.game = Quoridor(self.board_size, self.start_walls)
 
         # for tracking where in the move we are at any given time
         self.first_click = None
@@ -105,7 +105,7 @@ class PygamePlayer:
         for event in events:
             if event.type == pygame.MOUSEBUTTONUP:
                 pos = pygame.mouse.get_pos()
-                square_coordinate = np.array(list(pos)) // SQUARE_SIZE
+                square_coordinate = np.array(list(pos)) // self.square_size
                 wall_coordinate = self.hovering_rect_pos
                 return square_coordinate, wall_coordinate
 
@@ -131,16 +131,18 @@ class PygamePlayer:
 
         # find the position of the square being hovered over
         hover_found = False
-        for i in range(BOARD_SIZE):
-            for j in range(BOARD_SIZE):
-                if (np.array([i * SQUARE_SIZE, j * SQUARE_SIZE - 10]) <= np.array(list(mouse_pos))).all():
-                    if (np.array([(i + 1) * SQUARE_SIZE, j * SQUARE_SIZE + 10]) >= np.array(list(mouse_pos))).all():
-                        if j != 0 and i != BOARD_SIZE - 1:
+        for i in range(self.board_size):
+            for j in range(self.board_size):
+                if (np.array([i * self.square_size, j * self.square_size - 10]) <= np.array(list(mouse_pos))).all():
+                    if (np.array([(i + 1) * self.square_size, j * self.square_size + 10])
+                            >= np.array(list(mouse_pos))).all():
+                        if j != 0 and i != self.board_size - 1:
                             self.hovering_rect_pos = [i, j - 1, 0]
                             hover_found = True
-                if (np.array([i * SQUARE_SIZE - 10, j * SQUARE_SIZE]) <= np.array(list(mouse_pos))).all():
-                    if (np.array([i * SQUARE_SIZE + 10, (j + 1) * SQUARE_SIZE]) >= np.array(list(mouse_pos))).all():
-                        if i != 0 and j != BOARD_SIZE - 1:
+                if (np.array([i * self.square_size - 10, j * self.square_size]) <= np.array(list(mouse_pos))).all():
+                    if (np.array([i * self.square_size + 10, (j + 1) * self.square_size])
+                            >= np.array(list(mouse_pos))).all():
+                        if i != 0 and j != self.board_size - 1:
                             self.hovering_rect_pos = [i - 1, j, 1]
                             hover_found = True
         
@@ -157,8 +159,8 @@ class PygamePlayer:
         self.win.fill(BACKGROUND_FILL)
 
         # go through squares and fill in what is necessary
-        for i in range(BOARD_SIZE):
-            for j in range(BOARD_SIZE):
+        for i in range(self.board_size):
+            for j in range(self.board_size):
                 square_data = self.game.board[j, i, :]
 
                 # printing square colour
@@ -166,33 +168,36 @@ class PygamePlayer:
                     square_colour = SQUARE_COLOUR_1
                 else:
                     square_colour = SQUARE_COLOUR_2
-                pygame.draw.rect(self.win, square_colour, pygame.Rect((i * SQUARE_SIZE, j * SQUARE_SIZE),
-                                                                      (SQUARE_SIZE, SQUARE_SIZE)))
+                pygame.draw.rect(self.win, square_colour, pygame.Rect((i * self.square_size, j * self.square_size),
+                                                                      (self.square_size, self.square_size)))
 
                 # print agents
-                circle_centre = (i * SQUARE_SIZE + SQUARE_SIZE // 2, j * SQUARE_SIZE + SQUARE_SIZE // 2)
+                circle_centre = (i * self.square_size + self.square_size // 2,
+                                 j * self.square_size + self.square_size // 2)
                 if square_data[3] == 1:
                     if self.agent_clicked[1]:
                         colour = AGENT_1_CLICK_COLOUR
                     else:
                         colour = AGENT_1_COLOUR
-                    pygame.draw.circle(self.win, AGENT_1_CIRCLE_COLOUR, circle_centre, SQUARE_SIZE // 3 + 5)
-                    pygame.draw.circle(self.win, colour, circle_centre, SQUARE_SIZE // 3)
+                    pygame.draw.circle(self.win, AGENT_1_CIRCLE_COLOUR, circle_centre, self.square_size // 3 + 5)
+                    pygame.draw.circle(self.win, colour, circle_centre, self.square_size // 3)
                 if square_data[2] == 1:
                     if self.agent_clicked[0]:
                         colour = AGENT_2_CLICK_COLOUR
                     else:
                         colour = AGENT_2_COLOUR
-                    pygame.draw.circle(self.win, AGENT_2_CIRCLE_COLOUR, circle_centre, SQUARE_SIZE // 3 + 5)
-                    pygame.draw.circle(self.win, colour, circle_centre, SQUARE_SIZE // 3)
+                    pygame.draw.circle(self.win, AGENT_2_CIRCLE_COLOUR, circle_centre, self.square_size // 3 + 5)
+                    pygame.draw.circle(self.win, colour, circle_centre, self.square_size // 3)
 
                 # print walls
                 if square_data[0] == 1:
                     pygame.draw.rect(self.win, WALL_COLOUR,
-                                     pygame.Rect(((i) * SQUARE_SIZE, (j + 1) * SQUARE_SIZE - 10), (SQUARE_SIZE, 20)))
+                                     pygame.Rect(((i) * self.square_size, (j + 1) * self.square_size - 10),
+                                                 (self.square_size, 20)))
                 if square_data[1] == 1:
                     pygame.draw.rect(self.win, WALL_COLOUR,
-                                     pygame.Rect(((i + 1) * SQUARE_SIZE - 10, (j) * SQUARE_SIZE), (20, SQUARE_SIZE)))
+                                     pygame.Rect(((i + 1) * self.square_size - 10, (j) * self.square_size),
+                                                 (20, self.square_size)))
 
         if self.game.moving_now == 0:
             moving = 'blue'
@@ -215,10 +220,12 @@ class PygamePlayer:
             square_data = self.game.board[j, i, :]
             if square_data[0] != 1 and orientation == 0:
                 pygame.draw.rect(self.win, HOVER_RECTANGLE_COLOUR,
-                                 pygame.Rect(((i) * SQUARE_SIZE, (j + 1) * SQUARE_SIZE - 10), (2 * SQUARE_SIZE, 10)))
+                                 pygame.Rect(((i) * self.square_size, (j + 1) * self.square_size - 10),
+                                             (2 * self.square_size, 10)))
             if square_data[1] != 1 and orientation == 1:
                 pygame.draw.rect(self.win, HOVER_RECTANGLE_COLOUR,
-                                 pygame.Rect(((i + 1) * SQUARE_SIZE - 10, (j) * SQUARE_SIZE), (10, 2 * SQUARE_SIZE)))
+                                 pygame.Rect(((i + 1) * self.square_size - 10, (j) * self.square_size),
+                                             (10, 2 * self.square_size)))
 
         # update the display
         pygame.display.update()
@@ -267,7 +274,7 @@ class PygamePlayer:
             # checks that the move is legal
             move_direction = -(self.first_click - self.second_click)
             move = np.concatenate([move_direction, np.array([0., 0., 0., 0.])])
-            legal = check_input_move_legal(move)
+            legal = check_input_move_legal(move, self.board_size)
             if legal:
                 waiting_for_legal_move = False
             self.agent_clicked = [False, False]

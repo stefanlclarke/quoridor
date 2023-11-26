@@ -1,7 +1,4 @@
 import numpy as np
-from parameters import Parameters
-parameters = Parameters()
-board_size = parameters.board_size
 
 
 class ShortestPathBot:

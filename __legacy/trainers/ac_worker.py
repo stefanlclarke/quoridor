@@ -1,7 +1,7 @@
 import torch
 from parameters import Parameters
 from loss_functions.sarsa_loss import sarsa_loss
-from loss_functions.ppo_loss import actor_loss
+from __legacy2.ppo_loss import actor_loss
 from trainers.ac_trainer import ACTrainer
 import torch.multiprocessing as mp
 

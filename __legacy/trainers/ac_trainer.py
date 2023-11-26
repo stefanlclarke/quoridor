@@ -5,7 +5,7 @@ from models.actor_models import Actor
 import torch.nn as nn
 import torch.optim as optim
 from loss_functions.sarsa_loss import sarsa_loss
-from loss_functions.ppo_loss import actor_loss
+from __legacy2.ppo_loss import actor_loss
 from templates.trainer import Trainer
 
 if torch.cuda.is_available():

@@ -1,9 +1,5 @@
 import numpy as np
 import copy
-from parameters import Parameters
-
-parameters = Parameters()
-BOARD_SIZE = parameters.board_size
 
 
 def check_move_legal(board, start, direction, jump_allowed=True, pass_through_player=False):
@@ -35,12 +31,15 @@ def check_move_legal(board, start, direction, jump_allowed=True, pass_through_pl
             True if a jump is made
     """
 
+    # get board dimension
+    board_size = board.shape[0]
+
     # get start and end positions for the move
     initial_square_data = board[int(start[0]), int(start[1])]
     end = start + direction
 
     # if moving outside of the board return False, False
-    if (end < 0).any() or (end >= BOARD_SIZE).any():
+    if (end < 0).any() or (end >= board_size).any():
         return False, False
 
     # get data for the destination square
@@ -70,7 +69,7 @@ def check_move_legal(board, start, direction, jump_allowed=True, pass_through_pl
             jump_square = start + 2 * direction
 
             # if jumping outside the board return False, False
-            if (jump_square >= BOARD_SIZE).any():
+            if (jump_square >= board_size).any():
                 return False, False
             if (jump_square < 0).any():
                 return False, False
@@ -229,8 +228,11 @@ def get_possible_move_spaces(board, location):
             board-shaped array with a 1 in all positions which can be reached
     """
 
+    # get board dimension
+    board_size = board.shape[0]
+
     # create an array to keep track of locations which can be visited
-    visited = np.zeros((BOARD_SIZE, BOARD_SIZE))
+    visited = np.zeros((board_size, board_size))
 
     # keeps track of places yet to be checked
     currently_checking = [location]
@@ -243,7 +245,7 @@ def get_possible_move_spaces(board, location):
 
             # get possible move from current check location
             for move in moves:
-                if (point + move >= 0).all() and (point + move < BOARD_SIZE).all():
+                if (point + move >= 0).all() and (point + move < board_size).all():
                     possible_moves.append(move)
 
             # check to see which of these moves are legal
@@ -302,7 +304,7 @@ def check_wall_placement_legal(board, loc, orientation, player_1_loc, player_2_l
 
         loc: np.ndarray
             the locatino of the wall
-        
+
         orientation: np.ndarray
             the wall orientation
 
@@ -318,8 +320,11 @@ def check_wall_placement_legal(board, loc, orientation, player_1_loc, player_2_l
         returns: True if legal, False if not
     """
 
+    # get board dimension
+    board_size = board.shape[0]
+
     # if placed outside board it is illegal
-    if (loc < 0).any() or (loc >= BOARD_SIZE - 1).any():
+    if (loc < 0).any() or (loc >= board_size - 1).any():
         return False
 
     # check to see if any of the positions occupied by the wall are taken and return false if true
@@ -429,9 +434,12 @@ def check_win(board):
     returns: 1 if p1 wins, 2 if p2, 0 otherwise
     """
 
+    # get board dimension
+    board_size = board.shape[0]
+
     # get important layer (the one with player info)
     layer_0 = board[0]
-    layer_n = board[BOARD_SIZE - 1]
+    layer_n = board[board_size - 1]
 
     # return the winner
     for piece in layer_0:
@@ -443,7 +451,7 @@ def check_win(board):
     return 0
 
 
-def check_input_move_legal(move):
+def check_input_move_legal(move, board_size):
 
     """
     checks to see if a move has the correct syntax
@@ -468,7 +476,7 @@ def check_input_move_legal(move):
         return False
     if np.linalg.norm(movement_part) > 1:
         return False
-    if (wall_loc < 0).any() or (wall_loc > BOARD_SIZE - 1).any():
+    if (wall_loc < 0).any() or (wall_loc > board_size - 1).any():
         return False
     if np.linalg.norm(wall_orientation) > 1:
         return False
@@ -496,6 +504,9 @@ def flip_board(board, player_1_loc, player_2_loc):
         the new copied flipped board
     """
 
+    # get board dimension
+    board_size = board.shape[0]
+
     # make a copy
     new_board = copy.copy(board)
 
@@ -507,8 +518,8 @@ def flip_board(board, player_1_loc, player_2_loc):
     new_board = np.flipud(new_board)
 
     # flip player positions
-    for i in range(1, BOARD_SIZE):
-        for j in range(BOARD_SIZE):
+    for i in range(1, board_size):
+        for j in range(board_size):
             if new_board[i, j, 0] == 1:
                 new_board[i, j, 0] = 0
                 new_board[i - 1, j, 0] = 1
@@ -545,8 +556,11 @@ def check_full_move_legal(board, move, p1_loc, p2_loc, p1_walls, p2_walls, playe
             the player moving
     """
 
+    # get board dimension
+    board_size = board.shape[0]
+
     # check syntax
-    syntax_legal = check_input_move_legal(move)
+    syntax_legal = check_input_move_legal(move, board_size)
     if not syntax_legal:
         return False
 

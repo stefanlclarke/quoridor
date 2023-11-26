@@ -1,19 +1,14 @@
 import torch
 import numpy as np
-from parameters import Parameters
 
 if torch.cuda.is_available():
     device = 'cuda:0'
 else:
     device = 'cpu'
 
-parameters = Parameters()
-gamma = parameters.gamma
-lambd = parameters.lambd
-cutting = parameters.cut_at_random_move
 
-
-def sarsa_loss(memory, net, epoch, possible_moves, printing=False, return_advantage=False):
+def sarsa_loss(memory, net, epoch, possible_moves, gamma, lambd, printing=False, return_advantage=False,
+               cut_at_random_move=True):
 
     """
     calculates the loss on memory given network net
@@ -41,6 +36,9 @@ def sarsa_loss(memory, net, epoch, possible_moves, printing=False, return_advant
         loss: torch.tensor (and optionally advantage: torch.tensor)
 
     """
+
+    cutting = cut_at_random_move
+
     loss = torch.tensor([0.]).to(device)
     advantages = []
     for game in memory.game_log:
