@@ -34,7 +34,7 @@ forward_prob: 0.4
 move_prob_decay: 1.
 gamma: 0.95
 lambd: 0.5
-minimum_epsilon: 0.07
+minimum_epsilon: 0.1
 minimum_move_prob: 0.4
 cut_at_random_move: False
 random_proportion: 0.4
@@ -43,12 +43,13 @@ win_speed_param: 2
 # learning rates
 learning_rate: 0.004
 actor_learning_rate: 0.004
-critic_learning_rate: 0.04
+critic_learning_rate: 0.004
 actor_weight_clip: 1000
 
 # clipping
 max_grad_norm: 10000.
 entropy_constant: 0.003
+entropy_bias: 1
 
 # what am I training?
 train_actor: True
@@ -63,9 +64,10 @@ epochs: 10000000
 save_every: 10000
 n_cores: 4
 backwards_per_worker: 1
-total_reset_every: Null
+total_reset_every: 10000
 print_every: 100
 decrease_epsilon_every: 1000
+
 
 # storage parameters
 save_game_every: 100

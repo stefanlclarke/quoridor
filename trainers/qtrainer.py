@@ -14,7 +14,7 @@ else:
 class QTrainer(Trainer):
     def __init__(self, board_size, start_walls, decrease_epsilon_every, random_proportion, games_per_iter,
                  qnet_parameters, learning_rate, epsilon, minimum_epsilon, minimum_move_prob, lambd, gamma,
-                 save_name, epsilon_decay, net=None):
+                 save_name, epsilon_decay, net=None, total_reset_every=np.inf):
         """
         Handles the training of a Q-network using Sarsa Lambda.
         """
@@ -25,7 +25,8 @@ class QTrainer(Trainer):
                          number_other_info=2,
                          decrease_epsilon_every=decrease_epsilon_every,
                          random_proportion=random_proportion,
-                         games_per_iter=games_per_iter)
+                         games_per_iter=games_per_iter,
+                         total_reset_every=total_reset_every)
 
         # decide on type of neural network to use
         if net is None:

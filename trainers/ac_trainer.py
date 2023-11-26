@@ -19,14 +19,14 @@ class ACTrainer(Trainer):
                  games_per_iter=100, lambd=0.9, gamma=0.9, random_proportion=0.4,
                  qnet=None, actor=None, iterations_only_actor_train=0, convolutional=False, learning_rate=1e-4,
                  epsilon_decay=0.95, epsilon=0.4, minimum_epsilon=0.05, entropy_constant=1, max_grad_norm=1e5,
-                 move_prob=0.4, minimum_move_prob=0.2, entropy_bias=0, save_name=''):
+                 move_prob=0.4, minimum_move_prob=0.2, entropy_bias=0, save_name='', total_reset_every=np.inf):
         """
         Handles the training of an actor and a Q-network using an actor
         critic algorithm.
         """
 
         super().__init__(board_size, start_walls, 4, decrease_epsilon_every,
-                         random_proportion, games_per_iter)
+                         random_proportion, games_per_iter, total_reset_every)
         if qnet is None:
             if not convolutional:
                 self.net = Critic(critic_info['input_dim'], critic_info['critic_size_hidden'],

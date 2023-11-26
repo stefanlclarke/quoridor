@@ -1,31 +1,27 @@
 import numpy as np
-from parameters import Parameters
-
-parameters = Parameters()
-BOARD_SIZE = parameters.board_size
-START_WALLS = parameters.number_of_walls
-MAX_MOVES = parameters.max_rounds_per_game - 4
-MOVE_SIZE = 4 + 2 * (BOARD_SIZE - 1)**2
 
 
 class EasyGame:
 
-    def __init__(self):
+    def __init__(self, board_size, number_of_walls, max_moves):
 
-        self.board_size = BOARD_SIZE
-        self.board = np.zeros((BOARD_SIZE, BOARD_SIZE, 4))
+        self.board_size = board_size
+        self.start_walls = number_of_walls
+        self.max_moves = max_moves
+        self.board = np.zeros((board_size, board_size, 4))
         self.n_rounds = 0
         self.moving_now = 0
         self.playing = True
-        self.max_moves = MAX_MOVES
+        self.max_moves = self.max_moves
+        self.move_size = 4 + 2 * (self.board_size - 1)**2
         self.scramble_board()
 
     def scramble_board(self):
-        c1 = np.random.choice(MOVE_SIZE)
+        c1 = np.random.choice(self.move_size)
         board = self.board.flatten()
         board = board * 0
         board[c1] = 1
-        board = board.reshape((BOARD_SIZE, BOARD_SIZE, 4))
+        board = board.reshape((self.board_size, self.board_size, 4))
         self.board = board
 
     def move(self, move, get_time_info=True, reformat_from_onehot=False, flip_reformat=False):
@@ -46,7 +42,7 @@ class EasyGame:
     def get_state(self, flip=False, flatten=True):
 
         if flatten:
-            return np.block([[self.board.flatten(), np.zeros(2 + 2 * START_WALLS)]]).flatten()
+            return np.block([[self.board.flatten(), np.zeros(2 + 2 * self.start_walls)]]).flatten()
 
         return self.board
 

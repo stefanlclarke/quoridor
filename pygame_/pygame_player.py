@@ -324,7 +324,7 @@ class PygamePlayer:
                         move = self.agent_1.move(self.game)
 
                     if self.agent_1_output == 'one_hot':
-                        move = move_reformatter(move, flip=False)
+                        move = move_reformatter(move, board_size=self.board_size, flip=False)
 
                     print('bot move {}'.format(move))
 

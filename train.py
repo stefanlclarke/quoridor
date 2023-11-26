@@ -41,11 +41,15 @@ def train_ac(cfg):
                         max_grad_norm=cfg['max_grad_norm'],
                         save_name=sys.argv[1][14:] + '/save',
                         lambd=cfg['lambd'],
-                        gamma=cfg['gamma'])
+                        gamma=cfg['gamma'],
+                        move_prob=cfg['move_prob'],
+                        minimum_move_prob=cfg['minimum_move_prob'],
+                        entropy_bias=cfg['entropy_bias'],
+                        total_reset_every=cfg['total_reset_every'])
 
     time_playing, time_learning, game_processing_time, on_policy_time, off_policy_time, moving_time, \
         illegal_move_handling_time, checking_winner_time, wall_handling_time \
-        = trainer.train(100, 10, 'ac_25_Nov', get_time_info=True, print_every=10)
+        = trainer.train(cfg['epochs'], cfg['save_every'], 'AC', get_time_info=True)
     
 
 @hydra.main(version_base=None, config_path='configs/run_cfgs/', config_name='run.yaml')
@@ -60,24 +64,25 @@ def train_q(cfg):
                        'actor_output_dim': output_dim}
 
     trainer = QTrainer(board_size=cfg['board_size'],
-                    start_walls=cfg['number_of_walls'],
-                    qnet_parameters=qnet_parameters,
-                    random_proportion=cfg['random_proportion'],
-                    games_per_iter=cfg['games_between_backprops'],
-                    decrease_epsilon_every=cfg['decrease_epsilon_every'],
-                    net=None,
-                    learning_rate=cfg['learning_rate'],
-                    epsilon_decay=cfg['epsilon_decay'],
-                    epsilon=cfg['epsilon'],
-                    minimum_epsilon=cfg['minimum_epsilon'],
-                    save_name=sys.argv[1][14:] + '/save',
-                    lambd=cfg['lambd'],
-                    gamma=cfg['gamma'],
-                    minimum_move_prob=cfg['minimum_move_prob'])
+                       start_walls=cfg['number_of_walls'],
+                       qnet_parameters=qnet_parameters,
+                       random_proportion=cfg['random_proportion'],
+                       games_per_iter=cfg['games_between_backprops'],
+                       decrease_epsilon_every=cfg['decrease_epsilon_every'],
+                       net=None,
+                       learning_rate=cfg['learning_rate'],
+                       epsilon_decay=cfg['epsilon_decay'],
+                       epsilon=cfg['epsilon'],
+                       minimum_epsilon=cfg['minimum_epsilon'],
+                       save_name=sys.argv[1][14:] + '/save',
+                       lambd=cfg['lambd'],
+                       gamma=cfg['gamma'],
+                       minimum_move_prob=cfg['minimum_move_prob'],
+                       total_reset_every=cfg['total_reset_every'])
 
     time_playing, time_learning, game_processing_time, on_policy_time, off_policy_time, moving_time, \
         illegal_move_handling_time, checking_winner_time, wall_handling_time \
-        = trainer.train(100, 10, 'ac_25_Nov', get_time_info=True, print_every=10)
+        = trainer.train(cfg['epochs'], cfg['save_every'], 'Q', get_time_info=True, print_every=10)
 
 
 if __name__ == "__main__":

@@ -39,8 +39,8 @@ class Actor(NN):
 
 class ActorBot(QuoridoorAgent):
 
-    def __init__(self, actor_num_hidden, actor_size_hidden, input_dim, actor_output_dim, softmax_regularizer,
-                 save_name, good=False):
+    def __init__(self, save_name, actor_num_hidden, actor_size_hidden, input_dim, actor_output_dim,
+                 softmax_regularizer):
         """
         Agent for running the Q network class in testing.
 
@@ -49,10 +49,7 @@ class ActorBot(QuoridoorAgent):
 
         super().__init__()
         self.net = Actor(actor_num_hidden, actor_size_hidden, input_dim, actor_output_dim, softmax_regularizer)
-        if not good:
-            self.net.load_state_dict(torch.load('./saves/{}'.format(save_name), map_location=torch.device('cpu')))
-        if good:
-            self.net.load_state_dict(torch.load('./good_saves/{}'.format(save_name), map_location=torch.device('cpu')))
+        self.net.load_state_dict(torch.load(save_name, map_location=torch.device('cpu')))
         self.possible_moves = [np.zeros(actor_output_dim) for _ in range(actor_output_dim)]
         for i in range(len(self.possible_moves)):
             self.possible_moves[i][i] = 1

@@ -10,7 +10,7 @@ PLAY_QUORIDOR = True
 
 class Trainer:
     def __init__(self, board_size, start_walls, number_other_info=2, decrease_epsilon_every=100,
-                 random_proportion=0.4, games_per_iter=100):
+                 random_proportion=0.4, games_per_iter=100, total_reset_every=np.inf):
         """
         Template class for training AI on Quoridor.
 
@@ -29,6 +29,7 @@ class Trainer:
         self.bot_out_dimension = 4 + 2 * (self.game.board_size - 1)**2
         self.random_proportion = random_proportion
         self.games_per_iter = games_per_iter
+        self.total_reset_every = total_reset_every
 
         # define memory for each bot
         self.memory_1 = Memory(number_other_info=number_other_info)
@@ -138,13 +139,16 @@ class Trainer:
 
         summed_game_info = {'n': 0}
 
+        # j subtraction term
+        j_minus = 0
+
         # loop over iterations
         for j in range(iterations):
             self.reset_memories()
 
             # run as many games as desired
             for k in range(self.games_per_iter):
-                game_info = self.play_game(info=[j // self.decrease_epsilon_every + 1])
+                game_info = self.play_game(info=[(j - j_minus) // self.decrease_epsilon_every + 1])
 
                 add_to_dict_sum(game_info, summed_game_info)
 
@@ -157,6 +161,9 @@ class Trainer:
                                 summed_game_info['game_length'] / summed_game_info['n'],
                                 summed_game_info['percentage_moves_off_policy'] / summed_game_info['n'])
                 summed_game_info = {'n': 0}
+
+            if j % self.total_reset_every == 0:
+                j_minus = j
 
             # do backpropagation
             loss = self.learn()
