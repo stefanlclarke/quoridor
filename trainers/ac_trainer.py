@@ -129,7 +129,7 @@ class ACTrainer(Trainer):
         torch.save(self.net.state_dict(), self.save_name + str(j))
         torch.save(self.actor.state_dict(), self.save_name + str(j) + 'ACTOR')
 
-    def learn(self):
+    def learn(self, side=None):
         if self.learning_iterations_so_far >= self.iterations_only_actor_train:
             train_critic = True
         else:
@@ -153,7 +153,13 @@ class ACTrainer(Trainer):
         actor_p2_loss, actor_p2_entropy_loss = actor_loss(self.memory_2, advantage_2,
                                                           entropy_constant=self.entropy_constant,
                                                           entropy_bias=self.entropy_bias)
-        actor_loss_val = actor_p1_loss + actor_p2_loss + actor_p1_entropy_loss + actor_p2_entropy_loss
+
+        if side is None:
+            actor_loss_val = actor_p1_loss + actor_p2_loss + actor_p1_entropy_loss + actor_p2_entropy_loss
+        elif side == 0:
+            actor_loss_val = actor_p1_loss + actor_p1_entropy_loss
+        elif side == 1:
+            actor_loss_val = actor_p2_loss + actor_p2_entropy_loss
 
         self.optimizer.zero_grad()
         self.actor_opt.zero_grad()

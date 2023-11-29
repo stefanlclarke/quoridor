@@ -5,7 +5,7 @@ from game.move_reformatter import unformatted_move_to_index
 
 def play_game(info, memory_1, memory_2, game, on_policy_step, off_policy_step, spbots, printing=False,
               random_start=True, random_proportion=0.4, win_speed_param=1, max_rounds_per_game=40,
-              win_reward=1):
+              win_reward=1, alternate_on_policy_step=None, alternate_player=0):
 
     """
     Plays a game and stores all relevant information to memory.
@@ -75,7 +75,18 @@ def play_game(info, memory_1, memory_2, game, on_policy_step, off_policy_step, s
 
         # if max_rounds not yet reached allow the agent to play on policy
         if rounds <= max_rounds_per_game:
-            move, step_info, off_policy = on_policy_step(state, info)
+
+            # if playing legitimately against self make that step
+            if alternate_on_policy_step is None:
+                move, step_info, off_policy = on_policy_step(state, info)
+
+            # otherwise work out who is moving and take it
+            else:
+                if alternate_player == game.moving_now:
+                    move, step_info, off_policy = alternate_on_policy_step(state, info)
+                else:
+                    move, step_info, off_policy = on_policy_step(state, info)
+
             t1 = time.time()
             on_policy_time += t1 - t0
             n_moves_off_policy += int(off_policy)

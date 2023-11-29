@@ -14,7 +14,7 @@ PLAY_QUORIDOR = True
 class Trainer:
     def __init__(self, board_size, start_walls, number_other_info=2, decrease_epsilon_every=100,
                  random_proportion=0.4, games_per_iter=100, total_reset_every=np.inf, save_name='',
-                 cores=1):
+                 cores=1, old_selfplay=False, reload_every=5):
         """
         Template class for training AI on Quoridor.
 
@@ -51,8 +51,13 @@ class Trainer:
         for i in range(self.bot_out_dimension):
             self.possible_moves[i][i] = 1
 
+        # other learning parameters
         self.decrease_epsilon_every = decrease_epsilon_every
         self.cores = cores
+
+        # decides whether we reload old versions of self or just use current
+        self.old_selfplay = old_selfplay
+        self.reload_every = reload_every
 
     def handle_pre_training(self):
         """
@@ -66,13 +71,24 @@ class Trainer:
         """
         raise NotImplementedError()
 
+    def loaded_on_policy_step(self, state, info):
+        """
+        Function for an old saved version of self to interact with the game
+        """
+        raise NotImplementedError()
+
+    def load_opponent(self):
+        """
+        Chooses an old version of self and loads it in as the opponent
+        """
+
     def off_policy_step(self, state, move_ind, info):
         """
         Updates the info when the agent policy is not being used.
         """
         raise NotImplementedError()
 
-    def play_game(self, info=None, printing=False, random_start=True):
+    def play_game(self, info=None, printing=False, random_start=True, alternative_player=0):
 
         """
         Plays a game and stores all relevant information to memory.
@@ -82,8 +98,13 @@ class Trainer:
         the shortest_path policy.
         """
 
-        return play_game(info, self.memory_1, self.memory_2, self.game, self.on_policy_step, self.off_policy_step,
-                         self.spbots, printing=printing, random_start=random_start)
+        if not self.old_selfplay:
+            return play_game(info, self.memory_1, self.memory_2, self.game, self.on_policy_step, self.off_policy_step,
+                             self.spbots, printing=printing, random_start=random_start)
+        else:
+            return play_game(info, self.memory_1, self.memory_2, self.game, self.on_policy_step, self.off_policy_step,
+                             self.spbots, printing=printing, random_start=random_start,
+                             alternate_on_policy_step=self.loaded_on_policy_step, alternate_player=alternative_player)
 
     def reset_memories(self):
         """
@@ -101,7 +122,7 @@ class Trainer:
         self.memory_1.log_game()
         self.memory_2.log_game()
 
-    def learn(self):
+    def learn(self, side=None):
         """
         Calculates loss based on previously played games and performs
         the gradient update step.
@@ -175,11 +196,21 @@ class Trainer:
 
         # loop over iterations
         for j in range(start_j, iterations + start_j):
+
+            if self.old_selfplay and j % self.reload_every == 0:
+                self.load_opponent()
+
             self.reset_memories()
 
             # run as many games as desired
             for k in range(self.games_per_iter):
-                game_info = self.play_game(info=[(j - j_minus) // self.decrease_epsilon_every + 1])
+
+                # our_side stores which side we are playing on and learning from
+                our_side = np.random.choice(2)
+                opponent_side = (our_side + 1) % 2
+
+                game_info = self.play_game(info=[(j - j_minus) // self.decrease_epsilon_every + 1],
+                                           alternative_player=opponent_side)
 
                 add_to_dict_sum(game_info, summed_game_info)
 
@@ -204,7 +235,7 @@ class Trainer:
                 j_minus = j
 
             # do backpropagation
-            loss = self.learn()
+            loss = self.learn(side=our_side)
             losses += loss
 
             # save the model
