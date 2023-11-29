@@ -26,7 +26,8 @@ class QTrainer(Trainer):
                          decrease_epsilon_every=decrease_epsilon_every,
                          random_proportion=random_proportion,
                          games_per_iter=games_per_iter,
-                         total_reset_every=total_reset_every)
+                         total_reset_every=total_reset_every,
+                         save_name=save_name)
 
         # decide on type of neural network to use
         if net is None:

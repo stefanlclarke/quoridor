@@ -4,13 +4,17 @@ import numpy as np
 from models.memory import Memory
 from game.shortest_path import ShortestPathBot
 from templates.player import play_game
+import csv
+from matplotlib import pyplot as plt
+import pandas as pd
 
 PLAY_QUORIDOR = True
 
 
 class Trainer:
     def __init__(self, board_size, start_walls, number_other_info=2, decrease_epsilon_every=100,
-                 random_proportion=0.4, games_per_iter=100, total_reset_every=np.inf):
+                 random_proportion=0.4, games_per_iter=100, total_reset_every=np.inf, save_name='',
+                 cores=1):
         """
         Template class for training AI on Quoridor.
 
@@ -30,6 +34,7 @@ class Trainer:
         self.random_proportion = random_proportion
         self.games_per_iter = games_per_iter
         self.total_reset_every = total_reset_every
+        self.save_name = save_name
 
         # define memory for each bot
         self.memory_1 = Memory(number_other_info=number_other_info)
@@ -47,6 +52,7 @@ class Trainer:
             self.possible_moves[i][i] = 1
 
         self.decrease_epsilon_every = decrease_epsilon_every
+        self.cores = cores
 
     def handle_pre_training(self):
         """
@@ -110,7 +116,28 @@ class Trainer:
         """
         raise NotImplementedError()
 
-    def train(self, iterations, save_freq, name, get_time_info=False, print_every=100):
+    def put_in_csv(self, info):
+
+        with open('{}.csv'.format(self.save_name), 'a') as f:
+            writer = csv.writer(f)
+            writer.writerow(info)
+
+    def recreate_csv_plot(self):
+        df = pd.read_csv('{}.csv'.format(self.save_name), index_col='epoch')
+        categories = df.columns
+
+        fig, ax = plt.subplots(len(categories), figsize=(20, 10))
+
+        for i in range(len(categories)):
+            category = categories[i]
+            df[category].plot(ax=ax[i], label=category)
+            ax[i].set_ylabel(category)
+        plt.tight_layout()
+        plt.savefig(self.save_name + '_plot')
+        plt.close()
+        del df
+
+    def train(self, iterations, save_freq, name, get_time_info=False, print_every=100, start_j=0):
         """
         Runs the full training loop.
 
@@ -119,7 +146,9 @@ class Trainer:
         name: name to save to.
         """
 
-        print_iteration('epoch', 'move legality', 'average reward', 'game len', 'off pol %')
+        if print_every < np.inf:
+            print_iteration('epoch', 'move legality', 'average reward', 'game len', 'off pol %')
+            self.put_in_csv(['epoch', 'move legality', 'average reward', 'game len', 'off pol %'])
 
         # define timing trackers
         time_playing = 0.
@@ -142,8 +171,10 @@ class Trainer:
         # j subtraction term
         j_minus = 0
 
+        info_sum = np.zeros(5)
+
         # loop over iterations
-        for j in range(iterations):
+        for j in range(start_j, iterations + start_j):
             self.reset_memories()
 
             # run as many games as desired
@@ -155,11 +186,18 @@ class Trainer:
                 # save memory
                 self.log_memories()
 
-            if j % print_every == 0:
+            iteration_info = [j, summed_game_info['percentage_legal_moves'] / summed_game_info['n'],
+                              summed_game_info['average_reward'] / summed_game_info['n'],
+                              summed_game_info['game_length'] / summed_game_info['n'],
+                              summed_game_info['percentage_moves_off_policy'] / summed_game_info['n']]
+
+            if (j + 1) % print_every == 0:
                 print_iteration(j, summed_game_info['percentage_legal_moves'] / summed_game_info['n'],
                                 summed_game_info['average_reward'] / summed_game_info['n'],
                                 summed_game_info['game_length'] / summed_game_info['n'],
                                 summed_game_info['percentage_moves_off_policy'] / summed_game_info['n'])
+                self.put_in_csv(iteration_info)
+                self.recreate_csv_plot()
                 summed_game_info = {'n': 0}
 
             if j % self.total_reset_every == 0:
@@ -170,17 +208,24 @@ class Trainer:
             losses += loss
 
             # save the model
-            if j % save_freq == 0:
+            if (j + 1) % save_freq == 0:
                 print('saving iteration {}'.format(j * save_freq))
                 print('loss {}'.format(loss / save_freq))
                 print_iteration('epoch', 'move legality', 'average reward', 'game len', 'off pol %')
                 self.save(name, info=[j])
-            losses = 0
+
+            info_sum += np.array(iteration_info)
+
+        info_sum = info_sum / iterations
 
         # if time info is requested return it
         if get_time_info:
-            return time_playing, time_learning, game_processing_time, on_policy_time, off_policy_time, moving_time, \
+            return info_sum, losses, time_playing, time_learning, game_processing_time, on_policy_time, \
+                off_policy_time, \
+                moving_time, \
                 illegal_move_handling_time, checking_winner_time, wall_handling_time
+        else:
+            return np.block([info_sum, losses])
 
     def save_most_recent_play(self, name):
         p1_actions = self.memory_1.game_log[-1][5]

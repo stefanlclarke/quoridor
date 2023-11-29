@@ -58,15 +58,15 @@ n_iterations_only_critic: 1000
 iterations_only_actor_train: 0
 
 # epoch parameters
-games_between_backprops: 8
-backprops_per_worker: 4
+games_between_backprops: 16
+backprops_per_worker: 100
 epochs: 10000000
-save_every: 10000
-n_cores: 4
-backwards_per_worker: 1
-total_reset_every: 10000
-print_every: 100
-decrease_epsilon_every: 1000
+save_every: 2
+n_cores: 1
+backwards_per_worker: 10
+total_reset_every: Null
+print_every: 3
+decrease_epsilon_every: 10
 
 
 # storage parameters
