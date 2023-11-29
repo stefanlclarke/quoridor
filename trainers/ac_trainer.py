@@ -1,4 +1,5 @@
 import torch
+import os
 import numpy as np
 from models.critic_models import Critic, CriticConv
 from models.actor_models import Actor
@@ -21,7 +22,8 @@ class ACTrainer(Trainer):
                  qnet=None, actor=None, iterations_only_actor_train=0, convolutional=False, learning_rate=1e-4,
                  epsilon_decay=0.95, epsilon=0.4, minimum_epsilon=0.05, entropy_constant=1, max_grad_norm=1e5,
                  move_prob=0.4, minimum_move_prob=0.2, entropy_bias=0, save_name='', total_reset_every=np.inf,
-                 central_actor=None, central_critic=None, cores=1):
+                 central_actor=None, central_critic=None, cores=1, old_selfplay=False, load_from_last=None,
+                 reload_every=5, save_directory=''):
         """
         Handles the training of an actor and a Q-network using an actor
         critic algorithm.
@@ -29,7 +31,7 @@ class ACTrainer(Trainer):
 
         super().__init__(board_size, start_walls, 4, decrease_epsilon_every,
                          random_proportion, games_per_iter, total_reset_every, save_name=save_name,
-                         cores=cores)
+                         cores=cores, old_selfplay=old_selfplay, reload_every=reload_every)
         if qnet is None:
             if not convolutional:
                 self.net = Critic(critic_info['input_dim'], critic_info['critic_size_hidden'],
@@ -42,6 +44,11 @@ class ACTrainer(Trainer):
             self.actor = Actor(**actor_info).to(device)
         else:
             self.actor = actor.to(device)
+
+        if old_selfplay:
+            self.loaded_actor = Actor(**actor_info).to(device)
+            self.loaded_critic = Critic(critic_info['input_dim'], critic_info['critic_size_hidden'],
+                                        critic_info['critic_num_hidden']).to(device)
 
         self.optimizer = optim.Adam(self.net.parameters(), lr=learning_rate)
         self.actor_opt = optim.Adam(self.actor.parameters(), lr=learning_rate)
@@ -59,7 +66,8 @@ class ACTrainer(Trainer):
         self.minimum_move_prob = minimum_move_prob
         self.entropy_bias = entropy_bias
         self.save_name = save_name
-
+        self.save_directory = save_directory
+        self.load_from_last = load_from_last
         self.global_actor = central_actor
 
         if self.global_actor is not None:
@@ -126,8 +134,8 @@ class ACTrainer(Trainer):
         """
 
         j = info[0]
-        torch.save(self.net.state_dict(), self.save_name + str(j))
-        torch.save(self.actor.state_dict(), self.save_name + str(j) + 'ACTOR')
+        torch.save(self.net.state_dict(), self.save_directory + '/' + self.save_name + str(j))
+        torch.save(self.actor.state_dict(), self.save_directory + '/' + self.save_name + str(j) + 'ACTOR')
 
     def learn(self, side=None):
         if self.learning_iterations_so_far >= self.iterations_only_actor_train:
@@ -197,6 +205,62 @@ class ACTrainer(Trainer):
     def pull(self):
         self.net.pull(self.global_critic)
         self.actor.pull(self.global_actor)
+
+    def loaded_on_policy_step(self, state, info):
+        """
+        Function for an old saved version of self to interact with the game
+        """
+        state_torch = torch.from_numpy(state).to(device).float()
+        actor_move, actor_probabilities, actor_probability = self.loaded_actor.move(state_torch)
+
+        # get the lr decay
+        if info is None:
+            decay = 1.
+        else:
+            decay = info[0]
+
+        # decide whether to move randomly
+        u = np.random.uniform()
+        v = np.random.uniform()
+
+        # figure out what the random move is
+        if u < max([self.epsilon * self.epsilon_decay**decay, self.minimum_epsilon]):
+            random_move = True
+            if v < max([self.move_prob * self.epsilon_decay**decay, self.minimum_move_prob]):
+                move = np.random.choice(4)
+            else:
+                move = np.random.choice(self.bot_out_dimension - 4) + 4
+            probability = actor_probabilities[move]
+            move = self.possible_moves[move]
+        else:
+            random_move = False
+            move = actor_move
+            probability = actor_probability
+
+        critic_value = self.loaded_net.feed_forward(state_torch)
+
+        return move, [critic_value, probability, actor_probabilities], random_move
+
+    def load_opponent(self, j=0):
+        """
+        Chooses an old version of self and loads it in as the opponent
+        """
+
+        old_models = os.listdir(self.save_directory)
+
+        if len(old_models) == 0:
+            self.loaded_actor.pull(self.actor)
+            self.loaded_critic.pull(self.net)
+            return
+
+        old_actors = [x for x in old_models if x[-5:] == 'ACTOR']
+        prev_savenums = sorted([int(x[len(self.save_directory) + 1:]) for x in old_actors])
+        acceptable_choices = prev_savenums[-self.load_from_last:]
+        choice = np.random.choice(acceptable_choices)
+
+        self.loaded_actor.load_state_dict(torch.load(self.save_directory + '/' + self.save_name + str(choice)
+                                                     + 'ACTOR'))
+        self.loaded_critic.load_state_dict(torch.load(self.save_directory + '/' + self.save_name + str(choice)))
 
 
 class ACWorker(mp.Process, ACTrainer):

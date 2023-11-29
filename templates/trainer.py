@@ -77,10 +77,11 @@ class Trainer:
         """
         raise NotImplementedError()
 
-    def load_opponent(self):
+    def load_opponent(self, j=0):
         """
         Chooses an old version of self and loads it in as the opponent
         """
+        raise NotImplementedError()
 
     def off_policy_step(self, state, move_ind, info):
         """
@@ -198,7 +199,7 @@ class Trainer:
         for j in range(start_j, iterations + start_j):
 
             if self.old_selfplay and j % self.reload_every == 0:
-                self.load_opponent()
+                self.load_opponent(j=j)
 
             self.reset_memories()
 
