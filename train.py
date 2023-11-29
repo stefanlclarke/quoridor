@@ -132,7 +132,10 @@ def train_ac_parallel(cfg):
                                 total_reset_every=cfg['total_reset_every'],
                                 n_workers=cfg['n_cores'],
                                 iterations_per_worker=cfg['backprops_per_worker'],
-                                save_every=cfg['save_every'])
+                                save_every=cfg['save_every'],
+                                old_selfplay=cfg['old_selfplay'],
+                                load_from_last=cfg['load_from_last'],
+                                reload_every=cfg['reload_every'])
 
     trainer.train(cfg['epochs'], print_every=cfg['print_every'])
 

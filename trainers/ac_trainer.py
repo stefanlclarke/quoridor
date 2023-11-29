@@ -213,31 +213,11 @@ class ACTrainer(Trainer):
         state_torch = torch.from_numpy(state).to(device).float()
         actor_move, actor_probabilities, actor_probability = self.loaded_actor.move(state_torch)
 
-        # get the lr decay
-        if info is None:
-            decay = 1.
-        else:
-            decay = info[0]
+        random_move = False
+        move = actor_move
+        probability = actor_probability
 
-        # decide whether to move randomly
-        u = np.random.uniform()
-        v = np.random.uniform()
-
-        # figure out what the random move is
-        if u < max([self.epsilon * self.epsilon_decay**decay, self.minimum_epsilon]):
-            random_move = True
-            if v < max([self.move_prob * self.epsilon_decay**decay, self.minimum_move_prob]):
-                move = np.random.choice(4)
-            else:
-                move = np.random.choice(self.bot_out_dimension - 4) + 4
-            probability = actor_probabilities[move]
-            move = self.possible_moves[move]
-        else:
-            random_move = False
-            move = actor_move
-            probability = actor_probability
-
-        critic_value = self.loaded_net.feed_forward(state_torch)
+        critic_value = self.loaded_critic.feed_forward(state_torch)
 
         return move, [critic_value, probability, actor_probabilities], random_move
 
@@ -254,7 +234,7 @@ class ACTrainer(Trainer):
             return
 
         old_actors = [x for x in old_models if x[-5:] == 'ACTOR']
-        prev_savenums = sorted([int(x[len(self.save_directory) + 1:]) for x in old_actors])
+        prev_savenums = sorted([int(x[4:-5]) for x in old_actors])
         acceptable_choices = prev_savenums[-self.load_from_last:]
         choice = np.random.choice(acceptable_choices)
 
@@ -270,14 +250,17 @@ class ACWorker(mp.Process, ACTrainer):
                  qnet=None, actor=None, iterations_only_actor_train=0, convolutional=False, learning_rate=1e-4,
                  epsilon_decay=0.95, epsilon=0.4, minimum_epsilon=0.05, entropy_constant=1, max_grad_norm=1e5,
                  move_prob=0.4, minimum_move_prob=0.2, entropy_bias=0, save_name='', total_reset_every=np.inf,
-                 central_actor=None, central_critic=None, cores=1, res_q=None):
+                 central_actor=None, central_critic=None, cores=1, res_q=None, old_selfplay=False, load_from_last=None,
+                 reload_every=5, save_directory=''):
 
         ACTrainer.__init__(self, board_size, start_walls, critic_info, actor_info, decrease_epsilon_every,
                            games_per_iter, lambd, gamma, random_proportion,
                            qnet, actor, iterations_only_actor_train, convolutional, learning_rate,
                            epsilon_decay, epsilon, minimum_epsilon, entropy_constant, max_grad_norm,
                            move_prob, minimum_move_prob, entropy_bias, save_name, total_reset_every,
-                           central_actor, central_critic, cores=1)
+                           central_actor, central_critic, cores=1, old_selfplay=old_selfplay,
+                           load_from_last=load_from_last,
+                           reload_every=reload_every, save_directory=save_directory)
 
         mp.Process.__init__(self)
 

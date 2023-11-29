@@ -1,4 +1,5 @@
 import numpy as np
+import os
 import torch
 from matplotlib import pyplot as plt
 import csv
@@ -18,7 +19,8 @@ class ParallelACTrainer:
                  epsilon_decay=0.95, epsilon=0.4, minimum_epsilon=0.05, entropy_constant=1, max_grad_norm=1e5,
                  move_prob=0.4, minimum_move_prob=0.2, entropy_bias=0, save_name='', total_reset_every=np.inf,
                  central_actor=None, central_critic=None, cores=1, iterations_per_worker=100, n_workers=1,
-                 save_every=100, save_folder=''):
+                 save_every=100, save_folder='', old_selfplay=False, load_from_last=None,
+                 reload_every=5):
 
         if central_actor is None:
             self.central_actor = Actor(actor_info['actor_num_hidden'], actor_info['actor_size_hidden'],
@@ -61,6 +63,9 @@ class ParallelACTrainer:
         self.entropy_bias = entropy_bias
         self.cores = cores
         self.save_every = save_every
+        self.old_selfplay = old_selfplay
+        self.load_from_last = load_from_last
+        self.reload_every = reload_every
 
         trainers = [ACWorker(iterations_per_worker,
                              board_size,
@@ -90,13 +95,18 @@ class ParallelACTrainer:
                              self.central_actor,
                              self.central_critic,
                              cores,
-                             self.res_queue) for _ in range(n_workers)]
+                             self.res_queue,
+                             self.old_selfplay,
+                             self.load_from_last,
+                             self.reload_every,
+                             save_directory=save_folder + '/saves') for _ in range(n_workers)]
         self.trainers = trainers
         self.decrease_epsilon_every = decrease_epsilon_every
         self.total_reset_every = total_reset_every
         self.save_name = save_name
         self.save_folder = save_folder
         self.n_workers = n_workers
+        self.max_saves = 3
 
         if self.total_reset_every is None:
             self.total_reset_every = np.inf
@@ -162,6 +172,7 @@ class ParallelACTrainer:
             # save
             if i % self.save_every == 0:
                 self.save(i)
+                self.purge()
 
     def save(self, j):
         """
@@ -221,8 +232,26 @@ class ParallelACTrainer:
                              self.central_actor,
                              self.central_critic,
                              self.cores,
-                             self.res_queue) for _ in range(self.n_workers)]
+                             self.res_queue,
+                             self.old_selfplay,
+                             self.load_from_last,
+                             self.reload_every,
+                             save_directory=self.save_folder + '/saves') for _ in range(self.n_workers)]
         self.trainers = trainers
+
+    def purge(self):
+        old_models = os.listdir(self.save_folder + '/saves')
+
+        if len(old_models) < self.max_saves * 2 + 1:
+            return
+
+        old_actors = [x for x in old_models if x[-5:] == 'ACTOR']
+        prev_savenums = sorted([int(x[4:-5]) for x in old_actors])
+        to_delete = prev_savenums[: - self.max_saves]
+
+        for choice in to_delete:
+            os.remove(self.save_folder + '/saves' + '/' + self.save_name + str(choice) + 'ACTOR')
+            os.remove(self.save_folder + '/saves' + '/' + self.save_name + str(choice))
 
 
 def print_iteration(*args):
