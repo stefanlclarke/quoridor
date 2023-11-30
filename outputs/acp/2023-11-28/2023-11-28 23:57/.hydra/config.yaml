@@ -1,75 +1,55 @@
 name: Quoridor
-
-# dictates whether we are testing or not
-play_quoridor: True
-zero_critic : False
-
-# parameters for the game
+play_quoridor: true
+zero_critic: false
 board_size: 3
 number_of_walls: 1
-
-# dimensions of the neural networks
 actor_num_hidden: 3
 actor_size_hidden: 64
 critic_num_hidden: 3
 critic_size_hidden: 64
 softmax_regularizer: 0.9
-
-# conv stuff
 sidelen: 3
 conv_internal_channels: 8
 num_conv: 2
-convolutional: False
+convolutional: false
 conv_kernel_size: 1
-
-# parameters relating to the actor playing the game
 illegal_move_reward: -0.25
 legal_move_reward: 0
-win_reward: 1.
+win_reward: 1.0
 max_rounds_per_game: 40
 epsilon: 0.4
 epsilon_decay: 0.99
 move_prob: 0.4
 forward_prob: 0.4
-move_prob_decay: 1.
+move_prob_decay: 1.0
 gamma: 0.95
 lambd: 0.5
 minimum_epsilon: 0.1
 minimum_move_prob: 0.4
-cut_at_random_move: False
+cut_at_random_move: false
 random_proportion: 0.4
 win_speed_param: 2
-
-# learning rates
 learning_rate: 0.004
 actor_learning_rate: 0.004
 critic_learning_rate: 0.004
 actor_weight_clip: 1000
-
-# clipping
-max_grad_norm: 10000.
+max_grad_norm: 10000.0
 entropy_constant: 0.003
 entropy_bias: 1
-
-# what am I training?
-train_actor: True
-train_critic: True
-n_iterations_only_critic: 0
+train_actor: true
+train_critic: true
+n_iterations_only_critic: 1000
 iterations_only_actor_train: 0
-
-# epoch parameters
 games_between_backprops: 16
-backprops_per_worker: 20
+backprops_per_worker: 100
 epochs: 10000000000
-save_every: 40
-n_cores: 1
+save_every: 10
+n_cores: 4
 backwards_per_worker: 10
-total_reset_every: Null
+total_reset_every: null
 print_every: 3
 decrease_epsilon_every: 10
-
-# self-play parameters
-old_selfplay: True
-load_from_last: 100
+old_selfplay: true
+load_from_last: 400
 reload_every: 20
-reload_distribution: "geometric"
+save_game_every: 200

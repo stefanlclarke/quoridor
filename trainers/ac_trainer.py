@@ -7,6 +7,7 @@ import torch.nn as nn
 import torch.optim as optim
 from loss_functions.sarsa_loss_ac import sarsa_loss_ac
 from loss_functions.actor_loss import actor_loss
+from loss_functions.ppo_loss import ppo_actor_loss
 from templates.trainer import Trainer
 import torch.multiprocessing as mp
 
@@ -14,6 +15,10 @@ if torch.cuda.is_available():
     device = 'cuda:0'
 else:
     device = 'cpu'
+
+USE_PPO = True
+PPO_EPSILON = 0.1
+ACTOR_EPOCHS = 4
 
 
 class ACTrainer(Trainer):
@@ -23,14 +28,14 @@ class ACTrainer(Trainer):
                  epsilon_decay=0.95, epsilon=0.4, minimum_epsilon=0.05, entropy_constant=1, max_grad_norm=1e5,
                  move_prob=0.4, minimum_move_prob=0.2, entropy_bias=0, save_name='', total_reset_every=np.inf,
                  central_actor=None, central_critic=None, cores=1, old_selfplay=False, load_from_last=None,
-                 reload_every=5, save_directory=''):
+                 reload_every=5, save_directory='', reload_distribution="geometric"):
         """
         Handles the training of an actor and a Q-network using an actor
         critic algorithm.
         """
 
         super().__init__(board_size, start_walls, 4, decrease_epsilon_every,
-                         random_proportion, games_per_iter, total_reset_every, save_name=save_name,
+                         random_proportion, games_per_iter, total_reset_every=total_reset_every, save_name=save_name,
                          cores=cores, old_selfplay=old_selfplay, reload_every=reload_every)
         if qnet is None:
             if not convolutional:
@@ -52,6 +57,7 @@ class ACTrainer(Trainer):
 
         self.optimizer = optim.Adam(self.net.parameters(), lr=learning_rate)
         self.actor_opt = optim.Adam(self.actor.parameters(), lr=learning_rate)
+        self.reload_distribution = reload_distribution
 
         self.learning_iterations_so_far = 0
         self.iterations_only_actor_train = iterations_only_actor_train
@@ -137,7 +143,7 @@ class ACTrainer(Trainer):
         torch.save(self.net.state_dict(), self.save_directory + '/' + self.save_name + str(j))
         torch.save(self.actor.state_dict(), self.save_directory + '/' + self.save_name + str(j) + 'ACTOR')
 
-    def learn(self, side=None):
+    def learn(self, side=None, actor_epochs=ACTOR_EPOCHS):
         if self.learning_iterations_so_far >= self.iterations_only_actor_train:
             train_critic = True
         else:
@@ -155,22 +161,39 @@ class ACTrainer(Trainer):
                                                     return_advantage=True)
         critic_loss = critic_p1_loss + critic_p2_loss
 
-        actor_p1_loss, actor_p1_entropy_loss = actor_loss(self.memory_1, advantage_1,
-                                                          entropy_constant=self.entropy_constant,
-                                                          entropy_bias=self.entropy_bias)
-        actor_p2_loss, actor_p2_entropy_loss = actor_loss(self.memory_2, advantage_2,
-                                                          entropy_constant=self.entropy_constant,
-                                                          entropy_bias=self.entropy_bias)
+        for epoch in range(actor_epochs):
+            if not USE_PPO:
+                actor_p1_loss, actor_p1_entropy_loss = actor_loss(self.memory_1, advantage_1,
+                                                                  entropy_constant=self.entropy_constant,
+                                                                  entropy_bias=self.entropy_bias, epoch=epoch)
+                actor_p2_loss, actor_p2_entropy_loss = actor_loss(self.memory_2, advantage_2,
+                                                                  entropy_constant=self.entropy_constant,
+                                                                  entropy_bias=self.entropy_bias, epoch=epoch)
 
-        if side is None:
-            actor_loss_val = actor_p1_loss + actor_p2_loss + actor_p1_entropy_loss + actor_p2_entropy_loss
-        elif side == 0:
-            actor_loss_val = actor_p1_loss + actor_p1_entropy_loss
-        elif side == 1:
-            actor_loss_val = actor_p2_loss + actor_p2_entropy_loss
+                if side is None:
+                    actor_loss_val = actor_p1_loss + actor_p2_loss + actor_p1_entropy_loss + actor_p2_entropy_loss
+                elif side == 0:
+                    actor_loss_val = actor_p1_loss + actor_p1_entropy_loss
+                elif side == 1:
+                    actor_loss_val = actor_p2_loss + actor_p2_entropy_loss
+
+            else:
+                actor_p1_loss = ppo_actor_loss(self.memory_1, advantage_1, epsilon=PPO_EPSILON, epoch=epoch,
+                                               net=self.actor)
+                actor_p2_loss = ppo_actor_loss(self.memory_2, advantage_2, epsilon=PPO_EPSILON, epoch=epoch,
+                                               net=self.actor)
+
+                if side is None:
+                    actor_loss_val = actor_p1_loss + actor_p2_loss
+                elif side == 0:
+                    actor_loss_val = actor_p1_loss
+                elif side == 1:
+                    actor_loss_val = actor_p2_loss
+
+            self.actor_opt.zero_grad()
+            actor_loss_val.backward()
 
         self.optimizer.zero_grad()
-        self.actor_opt.zero_grad()
 
         if train_critic:
             critic_loss.backward()
@@ -184,8 +207,6 @@ class ACTrainer(Trainer):
                         gp._grad = lp.grad
             """
             self.optimizer.step()
-
-        actor_loss_val.backward()
 
         """
         if self.global_actor is not None:
@@ -236,7 +257,16 @@ class ACTrainer(Trainer):
         old_actors = [x for x in old_models if x[-5:] == 'ACTOR']
         prev_savenums = sorted([int(x[4:-5]) for x in old_actors])
         acceptable_choices = prev_savenums[-self.load_from_last:]
-        choice = np.random.choice(acceptable_choices)
+
+        if self.reload_distribution == "uniform":
+            choice = np.random.choice(acceptable_choices)
+        elif self.reload_distribution == "geometric":
+            choice_ind = np.random.geometric(p=0.5)
+            if choice_ind >= len(acceptable_choices):
+                choice_ind = len(acceptable_choices)
+            choice = acceptable_choices[-choice_ind]
+        else:
+            raise ValueError("invalid distribution")
 
         self.loaded_actor.load_state_dict(torch.load(self.save_directory + '/' + self.save_name + str(choice)
                                                      + 'ACTOR'))
@@ -251,16 +281,18 @@ class ACWorker(mp.Process, ACTrainer):
                  epsilon_decay=0.95, epsilon=0.4, minimum_epsilon=0.05, entropy_constant=1, max_grad_norm=1e5,
                  move_prob=0.4, minimum_move_prob=0.2, entropy_bias=0, save_name='', total_reset_every=np.inf,
                  central_actor=None, central_critic=None, cores=1, res_q=None, old_selfplay=False, load_from_last=None,
-                 reload_every=5, save_directory=''):
+                 reload_every=5, save_directory='', reload_distribution="geometric"):
 
         ACTrainer.__init__(self, board_size, start_walls, critic_info, actor_info, decrease_epsilon_every,
                            games_per_iter, lambd, gamma, random_proportion,
                            qnet, actor, iterations_only_actor_train, convolutional, learning_rate,
                            epsilon_decay, epsilon, minimum_epsilon, entropy_constant, max_grad_norm,
-                           move_prob, minimum_move_prob, entropy_bias, save_name, total_reset_every,
-                           central_actor, central_critic, cores=1, old_selfplay=old_selfplay,
+                           move_prob, minimum_move_prob, entropy_bias, save_name, total_reset_every=total_reset_every,
+                           central_actor=central_actor, central_critic=central_critic, cores=1,
+                           old_selfplay=old_selfplay,
                            load_from_last=load_from_last,
-                           reload_every=reload_every, save_directory=save_directory)
+                           reload_every=reload_every, save_directory=save_directory,
+                           reload_distribution=reload_distribution)
 
         mp.Process.__init__(self)
 

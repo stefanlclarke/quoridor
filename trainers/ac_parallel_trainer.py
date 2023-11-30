@@ -10,6 +10,8 @@ from trainers.ac_trainer import ACWorker
 from models.actor_models import Actor
 from models.critic_models import Critic
 
+MAX_SAVES = 500
+
 
 class ParallelACTrainer:
 
@@ -20,7 +22,7 @@ class ParallelACTrainer:
                  move_prob=0.4, minimum_move_prob=0.2, entropy_bias=0, save_name='', total_reset_every=np.inf,
                  central_actor=None, central_critic=None, cores=1, iterations_per_worker=100, n_workers=1,
                  save_every=100, save_folder='', old_selfplay=False, load_from_last=None,
-                 reload_every=5):
+                 reload_every=5, reload_distribution="geometric"):
 
         if central_actor is None:
             self.central_actor = Actor(actor_info['actor_num_hidden'], actor_info['actor_size_hidden'],
@@ -67,46 +69,49 @@ class ParallelACTrainer:
         self.load_from_last = load_from_last
         self.reload_every = reload_every
 
-        trainers = [ACWorker(iterations_per_worker,
-                             board_size,
-                             start_walls,
-                             critic_info,
-                             actor_info,
-                             1,
-                             games_per_iter,
-                             lambd,
-                             gamma,
-                             random_proportion,
-                             qnet,
-                             actor,
-                             iterations_only_actor_train,
-                             convolutional,
-                             learning_rate,
-                             epsilon_decay,
-                             epsilon,
-                             minimum_epsilon,
-                             entropy_constant,
-                             max_grad_norm,
-                             move_prob,
-                             minimum_move_prob,
-                             entropy_bias,
-                             save_name,
-                             np.inf,
-                             self.central_actor,
-                             self.central_critic,
-                             cores,
-                             self.res_queue,
-                             self.old_selfplay,
-                             self.load_from_last,
-                             self.reload_every,
-                             save_directory=save_folder + '/saves') for _ in range(n_workers)]
+        trainers = [ACWorker(iterations=self.iterations_per_worker,
+                             board_size=self.board_size,
+                             start_walls=self.start_walls,
+                             critic_info=self.critic_info,
+                             actor_info=self.actor_info,
+                             decrease_epsilon_every=1,
+                             games_per_iter=self.games_per_iter,
+                             lambd=self.lambd,
+                             gamma=self.gamma,
+                             random_proportion=self.random_proportion,
+                             qnet=self.qnet,
+                             actor=self.actor,
+                             iterations_only_actor_train=self.iterations_only_actor_train,
+                             convolutional=self.convolutional,
+                             learning_rate=self.learning_rate,
+                             epsilon_decay=self.epsilon_decay,
+                             epsilon=self.epsilon,
+                             minimum_epsilon=self.minimum_epsilon,
+                             entropy_constant=self.entropy_constant,
+                             max_grad_norm=self.max_grad_norm,
+                             move_prob=self.move_prob,
+                             minimum_move_prob=self.minimum_move_prob,
+                             entropy_bias=self.entropy_bias,
+                             save_name=save_name,
+                             total_reset_every=np.inf,
+                             central_actor=self.central_actor,
+                             central_critic=self.central_critic,
+                             cores=self.cores,
+                             res_q=self.res_queue,
+                             old_selfplay=self.old_selfplay,
+                             load_from_last=self.load_from_last,
+                             reload_every=self.reload_every,
+                             save_directory=save_folder + '/saves',
+                             reload_distribution=reload_distribution) for _ in range(n_workers)]
+
         self.trainers = trainers
         self.decrease_epsilon_every = decrease_epsilon_every
         self.total_reset_every = total_reset_every
         self.save_name = save_name
         self.save_folder = save_folder
         self.n_workers = n_workers
-        self.max_saves = 3
+        self.max_saves = MAX_SAVES
+        self.reload_distribution = reload_distribution
 
         if self.total_reset_every is None:
             self.total_reset_every = np.inf
@@ -116,7 +121,6 @@ class ParallelACTrainer:
         i_sub = 0
         print_iteration('epoch', 'move legality', 'average reward', 'game len', 'off pol %', 'loss')
         self.put_in_csv(['epoch', 'move legality', 'average reward', 'game len', 'off pol %', 'loss'])
-
 
         # loop over iterations
         for i in range(number_iterations):
@@ -204,39 +208,40 @@ class ParallelACTrainer:
 
     def reset_workers(self):
 
-        trainers = [ACWorker(self.iterations_per_worker,
-                             self.board_size,
-                             self.start_walls,
-                             self.critic_info,
-                             self.actor_info,
-                             1,
-                             self.games_per_iter,
-                             self.lambd,
-                             self.gamma,
-                             self.random_proportion,
-                             self.qnet,
-                             self.actor,
-                             self.iterations_only_actor_train,
-                             self.convolutional,
-                             self.learning_rate,
-                             self.epsilon_decay,
-                             self.epsilon,
-                             self.minimum_epsilon,
-                             self.entropy_constant,
-                             self.max_grad_norm,
-                             self.move_prob,
-                             self.minimum_move_prob,
-                             self.entropy_bias,
-                             self.save_name,
-                             np.inf,
-                             self.central_actor,
-                             self.central_critic,
-                             self.cores,
-                             self.res_queue,
-                             self.old_selfplay,
-                             self.load_from_last,
-                             self.reload_every,
-                             save_directory=self.save_folder + '/saves') for _ in range(self.n_workers)]
+        trainers = [ACWorker(iterations=self.iterations_per_worker,
+                             board_size=self.board_size,
+                             start_walls=self.start_walls,
+                             critic_info=self.critic_info,
+                             actor_info=self.actor_info,
+                             decrease_epsilon_every=1,
+                             games_per_iter=self.games_per_iter,
+                             lambd=self.lambd,
+                             gamma=self.gamma,
+                             random_proportion=self.random_proportion,
+                             qnet=self.qnet,
+                             actor=self.actor,
+                             iterations_only_actor_train=self.iterations_only_actor_train,
+                             convolutional=self.convolutional,
+                             learning_rate=self.learning_rate,
+                             epsilon_decay=self.epsilon_decay,
+                             epsilon=self.epsilon,
+                             minimum_epsilon=self.minimum_epsilon,
+                             entropy_constant=self.entropy_constant,
+                             max_grad_norm=self.max_grad_norm,
+                             move_prob=self.move_prob,
+                             minimum_move_prob=self.minimum_move_prob,
+                             entropy_bias=self.entropy_bias,
+                             save_name=self.save_name,
+                             total_reset_every=np.inf,
+                             central_actor=self.central_actor,
+                             central_critic=self.central_critic,
+                             cores=self.cores,
+                             res_q=self.res_queue,
+                             old_selfplay=self.old_selfplay,
+                             load_from_last=self.load_from_last,
+                             reload_every=self.reload_every,
+                             save_directory=self.save_folder + '/saves',
+                             reload_distribution=self.reload_distribution) for _ in range(self.n_workers)]
         self.trainers = trainers
 
     def purge(self):

@@ -135,7 +135,8 @@ def train_ac_parallel(cfg):
                                 save_every=cfg['save_every'],
                                 old_selfplay=cfg['old_selfplay'],
                                 load_from_last=cfg['load_from_last'],
-                                reload_every=cfg['reload_every'])
+                                reload_every=cfg['reload_every'],
+                                reload_distribution=cfg['reload_distribution'])
 
     trainer.train(cfg['epochs'], print_every=cfg['print_every'])
 

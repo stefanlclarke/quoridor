@@ -198,7 +198,7 @@ class Trainer:
         # loop over iterations
         for j in range(start_j, iterations + start_j):
 
-            if self.old_selfplay and j % self.reload_every == 0:
+            if self.old_selfplay and (j - start_j) % self.reload_every == 0:
                 self.load_opponent(j=j)
 
             self.reset_memories()

@@ -1,6 +1,6 @@
 hydra:
   run:
-    dir: outputs/acplay/2023-11-26/2023-11-26 13:32
+    dir: outputs/acplay/2023-11-30/2023-11-30 02:05
   sweep:
     dir: multirun/${now:%Y-%m-%d}/${now:%H-%M-%S}
     subdir: ${hydra.job.num}
@@ -110,7 +110,7 @@ hydra:
   output_subdir: .hydra
   overrides:
     hydra:
-    - hydra.run.dir=outputs/acplay/2023-11-26/2023-11-26 13:32
+    - hydra.run.dir=outputs/acplay/2023-11-30/2023-11-30 02:05
     - hydra.mode=RUN
     task: []
   job:
@@ -141,8 +141,8 @@ hydra:
     - path: ''
       schema: structured
       provider: schema
-    output_dir: /Users/stefanclarkework/Desktop/quoridor/outputs/acplay/2023-11-26/2023-11-26
-      13:32
+    output_dir: /Users/stefanclarkework/Desktop/quoridor/outputs/acplay/2023-11-30/2023-11-30
+      02:05
     choices:
       hydra/env: default
       hydra/callbacks: null
