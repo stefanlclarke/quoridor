@@ -10,6 +10,7 @@ from loss_functions.actor_loss import actor_loss
 from loss_functions.ppo_loss import ppo_actor_loss
 from templates.trainer import Trainer
 import torch.multiprocessing as mp
+from game.state_scrambling import mild_continuous_scramble
 
 if torch.cuda.is_available():
     device = 'cuda:0'
@@ -19,6 +20,7 @@ else:
 USE_PPO = True
 PPO_EPSILON = 0.1
 ACTOR_EPOCHS = 4
+SCRAMBLE_PROB = 0.5
 
 
 class ACTrainer(Trainer):
@@ -100,16 +102,27 @@ class ACTrainer(Trainer):
         # decide whether to move randomly
         u = np.random.uniform()
         v = np.random.uniform()
+        w = np.random.uniform()
 
         # figure out what the random move is
         if u < max([self.epsilon * self.epsilon_decay**decay, self.minimum_epsilon]):
             random_move = True
-            if v < max([self.move_prob * self.epsilon_decay**decay, self.minimum_move_prob]):
-                move = np.random.choice(4)
+            if w > SCRAMBLE_PROB:
+                if v < max([self.move_prob * self.epsilon_decay**decay, self.minimum_move_prob]):
+                    move = np.random.choice(4)
+                else:
+                    move = np.random.choice(self.bot_out_dimension - 4) + 4
+                probability = actor_probabilities[move]
+                move = self.possible_moves[move]
             else:
-                move = np.random.choice(self.bot_out_dimension - 4) + 4
-            probability = actor_probabilities[move]
-            move = self.possible_moves[move]
+                scrambled_state = mild_continuous_scramble(state)
+                scrambled_state_torch = torch.from_numpy(scrambled_state).to(device).float()
+                scrambled_actor_move, scrambled_actor_probabilities, scrambled_actor_probability \
+                    = self.actor.move(scrambled_state_torch)
+                move = scrambled_actor_move
+                move_index = np.where(move == 1)[0][0]
+                probability = actor_probabilities[move_index]
+
         else:
             random_move = False
             move = actor_move
