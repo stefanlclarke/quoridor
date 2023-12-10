@@ -1,10 +1,12 @@
 import hydra
 import yaml
 import sys
+import datetime
+
 from pygame_.pygame_player import PygamePlayer
 from models.q_models import QNetBot
-import datetime
 from models.actor_models import ActorBot
+from config import config, update_config_from_yaml
 
 
 @hydra.main(version_base=None, config_path='configs/run_cfgs/', config_name='play.yaml')
@@ -58,7 +60,9 @@ def play_human(cfg):
     with open(bot_cfg_dir, 'r') as stream:
         cfg = yaml.safe_load(stream)
 
-    game = PygamePlayer(cfg['board_size'], cfg['number_of_walls'])
+    update_config_from_yaml(config, cfg)
+
+    game = PygamePlayer()
     game.play()
 
 

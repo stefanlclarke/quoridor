@@ -36,6 +36,9 @@ class Trainer:
         self.total_reset_every = total_reset_every
         self.save_name = save_name
 
+        if self.total_reset_every is None:
+            self.total_reset_every = np.inf
+
         # define memory for each bot
         self.memory_1 = Memory(number_other_info=number_other_info)
         self.memory_2 = Memory(number_other_info=number_other_info)

@@ -3,9 +3,15 @@ import time
 from game.move_reformatter import unformatted_move_to_index
 
 
-def play_game(info, memory_1, memory_2, game, on_policy_step, off_policy_step, spbots, printing=False,
-              random_start=True, random_proportion=0.4, win_speed_param=1, max_rounds_per_game=40,
-              win_reward=1, alternate_on_policy_step=None, alternate_player=0):
+def play_game(info, memory_1, memory_2, game, on_policy_step, off_policy_step, spbots,
+              printing=False,
+              random_start=True,
+              random_proportion=0.4,
+              win_speed_param=1,
+              max_rounds_per_game=40,
+              win_reward=1,
+              alternate_on_policy_step=None,
+              alternate_player=0):
 
     """
     Plays a game and stores all relevant information to memory.

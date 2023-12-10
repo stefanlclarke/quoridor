@@ -11,6 +11,7 @@ from loss_functions.ppo_loss import ppo_actor_loss
 from templates.trainer import Trainer
 import torch.multiprocessing as mp
 from game.state_scrambling import mild_continuous_scramble
+from config import config
 
 if torch.cuda.is_available():
     device = 'cuda:0'
@@ -24,13 +25,36 @@ SCRAMBLE_PROB = 0.5
 
 
 class ACTrainer(Trainer):
-    def __init__(self, board_size, start_walls, critic_info, actor_info, decrease_epsilon_every=100,
-                 games_per_iter=100, lambd=0.9, gamma=0.9, random_proportion=0.4,
-                 qnet=None, actor=None, iterations_only_actor_train=0, convolutional=False, learning_rate=1e-4,
-                 epsilon_decay=0.95, epsilon=0.4, minimum_epsilon=0.05, entropy_constant=1, max_grad_norm=1e5,
-                 move_prob=0.4, minimum_move_prob=0.2, entropy_bias=0, save_name='', total_reset_every=np.inf,
-                 central_actor=None, central_critic=None, cores=1, old_selfplay=False, load_from_last=None,
-                 reload_every=5, save_directory='', reload_distribution="geometric"):
+    def __init__(self, critic_info, actor_info,
+                 board_size=config.BOARD_SIZE,
+                 start_walls=config.NUMBER_OF_WALLS,
+                 decrease_epsilon_every=config.DECREASE_EPSILON_EVERY,
+                 games_per_iter=config.WORKER_GAMES_BETWEEN_TRAINS,
+                 lambd=config.LAMBD,
+                 gamma=config.GAMMA,
+                 random_proportion=config.RANDOM_PROPORTION,
+                 qnet=None, actor=None,
+                 iterations_only_actor_train=config.ITERATIONS_ONLY_ACTOR_TRAIN,
+                 convolutional=config.USE_CONV_NET,
+                 learning_rate=config.CRITIC_LEARNING_RATE,
+                 epsilon_decay=config.EPSILON_DECAY,
+                 epsilon=config.EPSILON,
+                 minimum_epsilon=config.MINIMUM_EPSILON,
+                 entropy_constant=config.ENTROPY_CONSTANT,
+                 max_grad_norm=config.MAX_GRAD_NORM,
+                 move_prob=config.MOVE_PROB,
+                 minimum_move_prob=config.MINIMUM_MOVE_PROB,
+                 entropy_bias=config.ENTROPY_BIAS,
+                 save_name='',
+                 total_reset_every=config.TOTAL_RESET_EVERY,
+                 central_actor=None,
+                 central_critic=None,
+                 cores=config.N_CORES,
+                 old_selfplay=config.OLD_SELFPLAY,
+                 load_from_last=config.LOAD_FROM_LAST,
+                 reload_every=config.RELOAD_EVERY,
+                 save_directory='',
+                 reload_distribution=config.RELOAD_DISTRIBUTION):
         """
         Handles the training of an actor and a Q-network using an actor
         critic algorithm.
@@ -288,28 +312,14 @@ class ACTrainer(Trainer):
 
 class ACWorker(mp.Process, ACTrainer):
 
-    def __init__(self, iterations, board_size, start_walls, critic_info, actor_info, decrease_epsilon_every=100,
-                 games_per_iter=100, lambd=0.9, gamma=0.9, random_proportion=0.4,
-                 qnet=None, actor=None, iterations_only_actor_train=0, convolutional=False, learning_rate=1e-4,
-                 epsilon_decay=0.95, epsilon=0.4, minimum_epsilon=0.05, entropy_constant=1, max_grad_norm=1e5,
-                 move_prob=0.4, minimum_move_prob=0.2, entropy_bias=0, save_name='', total_reset_every=np.inf,
-                 central_actor=None, central_critic=None, cores=1, res_q=None, old_selfplay=False, load_from_last=None,
-                 reload_every=5, save_directory='', reload_distribution="geometric"):
+    def __init__(self, critic_info, actor_info, central_critic, central_actor, res_q, save_name='', save_directory=''):
 
-        ACTrainer.__init__(self, board_size, start_walls, critic_info, actor_info, decrease_epsilon_every,
-                           games_per_iter, lambd, gamma, random_proportion,
-                           qnet, actor, iterations_only_actor_train, convolutional, learning_rate,
-                           epsilon_decay, epsilon, minimum_epsilon, entropy_constant, max_grad_norm,
-                           move_prob, minimum_move_prob, entropy_bias, save_name, total_reset_every=total_reset_every,
-                           central_actor=central_actor, central_critic=central_critic, cores=1,
-                           old_selfplay=old_selfplay,
-                           load_from_last=load_from_last,
-                           reload_every=reload_every, save_directory=save_directory,
-                           reload_distribution=reload_distribution)
+        ACTrainer.__init__(self, critic_info=critic_info, actor_info=actor_info, save_name=save_name,
+                           save_directory=save_directory, central_actor=central_actor, central_critic=central_critic)
 
         mp.Process.__init__(self)
 
-        self.iterations = iterations
+        self.iterations = config.EPOCHS_PER_WORKER
         self.res_q = res_q
         self.j = 0
 

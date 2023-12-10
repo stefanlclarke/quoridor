@@ -1,10 +1,13 @@
 import numpy as np
+import pygame
+import sys
+
 from game.game import Quoridor
 from game.game_helper_functions import check_input_move_legal
 from game.printing import get_printable_board
 from game.move_reformatter import move_reformatter
-import pygame
-import sys
+from config import config
+
 
 WINDOW_SIZE = 600
 FRAME_RATE = 10
@@ -23,7 +26,8 @@ HOVER_RECTANGLE_COLOUR = (100, 100, 100)
 
 
 class PygamePlayer:
-    def __init__(self, board_size, start_walls, agent_1='human', agent_2='human'):
+    def __init__(self, board_size=config.BOARD_SIZE, start_walls=config.NUMBER_OF_WALLS,
+                 agent_1='human', agent_2='human'):
 
         """
         Interface for running the game using pygame.
