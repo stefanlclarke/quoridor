@@ -29,7 +29,7 @@ class Configuration:
     # parameters relating to the actor playing the game
     ILLEGAL_MOVE_REWARD = -0.25
     LEGAL_MOVE_REWARD = 0
-    WIN_REWARD = 1.
+    WIN_REWARD = 1000.
     MAX_ROUNDS_PER_GAME = 40
     EPSILON = 0.4
     EPSILON_DECAY = 0.99
@@ -63,11 +63,10 @@ class Configuration:
 
     # epoch parameters
     WORKER_GAMES_BETWEEN_TRAINS = 16
-    WORKER_TRAINS = 20
     TOTAL_EPOCHS = 10000000000
     SAVE_EVERY = 40
     N_CORES = 1
-    EPOCHS_PER_WORKER = 10
+    EPOCHS_PER_WORKER = 100
     TOTAL_RESET_EVERY = None
     PRINT_EVERY = 3
     DECREASE_EPSILON_EVERY = 10
@@ -78,11 +77,15 @@ class Configuration:
     RELOAD_EVERY = 20
     RELOAD_DISTRIBUTION = "geometric"
 
+    # continue a previous run
+    CONTINUE = None
+
 
 def update_config_from_yaml(config, cfg_yaml):
 
     for key in dir(config):
         if key[0] != '_':
+            print('setting attr {}'.format(key))
             setattr(config, key, cfg_yaml[key])
 
 

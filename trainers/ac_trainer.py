@@ -26,43 +26,45 @@ SCRAMBLE_PROB = 0.5
 
 class ACTrainer(Trainer):
     def __init__(self, critic_info, actor_info,
-                 board_size=config.BOARD_SIZE,
-                 start_walls=config.NUMBER_OF_WALLS,
-                 decrease_epsilon_every=config.DECREASE_EPSILON_EVERY,
-                 games_per_iter=config.WORKER_GAMES_BETWEEN_TRAINS,
-                 lambd=config.LAMBD,
-                 gamma=config.GAMMA,
-                 random_proportion=config.RANDOM_PROPORTION,
-                 qnet=None, actor=None,
-                 iterations_only_actor_train=config.ITERATIONS_ONLY_ACTOR_TRAIN,
-                 convolutional=config.USE_CONV_NET,
-                 learning_rate=config.CRITIC_LEARNING_RATE,
-                 epsilon_decay=config.EPSILON_DECAY,
-                 epsilon=config.EPSILON,
-                 minimum_epsilon=config.MINIMUM_EPSILON,
-                 entropy_constant=config.ENTROPY_CONSTANT,
-                 max_grad_norm=config.MAX_GRAD_NORM,
-                 move_prob=config.MOVE_PROB,
-                 minimum_move_prob=config.MINIMUM_MOVE_PROB,
-                 entropy_bias=config.ENTROPY_BIAS,
-                 save_name='',
-                 total_reset_every=config.TOTAL_RESET_EVERY,
                  central_actor=None,
                  central_critic=None,
-                 cores=config.N_CORES,
-                 old_selfplay=config.OLD_SELFPLAY,
-                 load_from_last=config.LOAD_FROM_LAST,
-                 reload_every=config.RELOAD_EVERY,
+                 save_name='',
                  save_directory='',
-                 reload_distribution=config.RELOAD_DISTRIBUTION):
+                 qnet=None, actor=None):
         """
         Handles the training of an actor and a Q-network using an actor
         critic algorithm.
         """
 
+        board_size = config.BOARD_SIZE
+        start_walls = config.NUMBER_OF_WALLS
+        decrease_epsilon_every = config.DECREASE_EPSILON_EVERY
+        games_per_iter = config.WORKER_GAMES_BETWEEN_TRAINS
+        lambd = config.LAMBD
+        gamma = config.GAMMA
+        random_proportion = config.RANDOM_PROPORTION
+        iterations_only_actor_train = config.ITERATIONS_ONLY_ACTOR_TRAIN
+        convolutional = config.USE_CONV_NET
+        learning_rate = config.CRITIC_LEARNING_RATE
+        epsilon_decay = config.EPSILON_DECAY
+        epsilon = config.EPSILON
+        minimum_epsilon = config.MINIMUM_EPSILON
+        entropy_constant = config.ENTROPY_CONSTANT
+        max_grad_norm = config.MAX_GRAD_NORM
+        move_prob = config.MOVE_PROB
+        minimum_move_prob = config.MINIMUM_MOVE_PROB
+        entropy_bias = config.ENTROPY_BIAS
+        total_reset_every = config.TOTAL_RESET_EVERY
+        cores = config.N_CORES
+        old_selfplay = config.OLD_SELFPLAY
+        load_from_last = config.LOAD_FROM_LAST
+        reload_every = config.RELOAD_EVERY
+        reload_distribution = config.RELOAD_DISTRIBUTION
+
         super().__init__(board_size, start_walls, 4, decrease_epsilon_every,
                          random_proportion, games_per_iter, total_reset_every=total_reset_every, save_name=save_name,
-                         cores=cores, old_selfplay=old_selfplay, reload_every=reload_every)
+                         cores=cores, old_selfplay=old_selfplay, reload_every=reload_every,
+                         save_directory=save_directory)
         if qnet is None:
             if not convolutional:
                 self.net = Critic(critic_info['input_dim'], critic_info['critic_size_hidden'],
@@ -78,12 +80,11 @@ class ACTrainer(Trainer):
 
         if old_selfplay:
             self.loaded_actor = Actor(**actor_info).to(device)
-            self.loaded_critic = Critic(critic_info['input_dim'], critic_info['critic_size_hidden'],
-                                        critic_info['critic_num_hidden']).to(device)
-
-        self.optimizer = optim.Adam(self.net.parameters(), lr=learning_rate)
-        self.actor_opt = optim.Adam(self.actor.parameters(), lr=learning_rate)
-        self.reload_distribution = reload_distribution
+            if not convolutional:
+                self.loaded_critic = Critic(critic_info['input_dim'], critic_info['critic_size_hidden'],
+                                            critic_info['critic_num_hidden']).to(device)
+            else:
+                self.loaded_critic = CriticConv(**critic_info).to(device)
 
         self.learning_iterations_so_far = 0
         self.iterations_only_actor_train = iterations_only_actor_train
@@ -98,16 +99,22 @@ class ACTrainer(Trainer):
         self.minimum_move_prob = minimum_move_prob
         self.entropy_bias = entropy_bias
         self.save_name = save_name
-        self.save_directory = save_directory
         self.load_from_last = load_from_last
-        self.global_actor = central_actor
+        self.reload_distribution = reload_distribution
 
+        self.global_actor = central_actor
         if self.global_actor is not None:
             self.actor.pull(self.global_actor)
+            self.actor_opt = optim.Adam(self.global_actor.parameters(), lr=learning_rate)
+        else:
+            self.actor_opt = optim.Adam(self.actor.parameters(), lr=learning_rate)
 
         self.global_critic = central_critic
         if self.global_critic is not None:
             self.net.pull(self.global_critic)
+            self.optimizer = optim.Adam(self.global_critic.parameters(), lr=learning_rate)
+        else:
+            self.optimizer = optim.Adam(self.net.parameters(), lr=learning_rate)
 
     def on_policy_step(self, state, info):
         """
@@ -181,6 +188,7 @@ class ACTrainer(Trainer):
         torch.save(self.actor.state_dict(), self.save_directory + '/' + self.save_name + str(j) + 'ACTOR')
 
     def learn(self, side=None, actor_epochs=ACTOR_EPOCHS):
+
         if self.learning_iterations_so_far >= self.iterations_only_actor_train:
             train_critic = True
         else:
@@ -199,6 +207,8 @@ class ACTrainer(Trainer):
         critic_loss = critic_p1_loss + critic_p2_loss
 
         for epoch in range(actor_epochs):
+
+            # ACTOR
             if not USE_PPO:
                 actor_p1_loss, actor_p1_entropy_loss = actor_loss(self.memory_1, advantage_1,
                                                                   entropy_constant=self.entropy_constant,
@@ -230,8 +240,8 @@ class ACTrainer(Trainer):
             self.actor_opt.zero_grad()
             actor_loss_val.backward()
 
+        # CRITIC
         self.optimizer.zero_grad()
-
         if train_critic:
             critic_loss.backward()
 
@@ -243,6 +253,8 @@ class ACTrainer(Trainer):
                     else:
                         gp._grad = lp.grad
             """
+            if self.global_actor is not None:
+                ensure_shared_grads(self.net, self.global_critic)
             self.optimizer.step()
 
         """
@@ -253,7 +265,11 @@ class ACTrainer(Trainer):
                 else:
                     gp._grad = lp.grad
         """
+
+        # ACTOR AGAIN
         nn.utils.clip_grad_norm_(self.actor.parameters(), self.max_grad_norm)
+        if self.global_actor is not None:
+            ensure_shared_grads(self.actor, self.global_actor)
         self.actor_opt.step()
 
         loss = actor_loss_val + critic_loss
@@ -284,7 +300,7 @@ class ACTrainer(Trainer):
         Chooses an old version of self and loads it in as the opponent
         """
 
-        old_models = os.listdir(self.save_directory)
+        old_models = os.listdir(self.save_directory + '/saves/')
 
         if len(old_models) == 0:
             self.loaded_actor.pull(self.actor)
@@ -305,9 +321,15 @@ class ACTrainer(Trainer):
         else:
             raise ValueError("invalid distribution")
 
-        self.loaded_actor.load_state_dict(torch.load(self.save_directory + '/' + self.save_name + str(choice)
+        """
+        print('loading!')
+        print(self.save_directory + 'saves/' + self.save_name + str(choice)
+                                                     + 'ACTOR')
+        """
+
+        self.loaded_actor.load_state_dict(torch.load(self.save_directory + 'saves/' + self.save_name + str(choice)
                                                      + 'ACTOR'))
-        self.loaded_critic.load_state_dict(torch.load(self.save_directory + '/' + self.save_name + str(choice)))
+        self.loaded_critic.load_state_dict(torch.load(self.save_directory + 'saves/' + self.save_name + str(choice)))
 
 
 class ACWorker(mp.Process, ACTrainer):
@@ -327,3 +349,11 @@ class ACWorker(mp.Process, ACTrainer):
         self.pull()
         info = self.train(self.iterations, np.inf, '', start_j=self.j, print_every=np.inf)
         self.res_q.put(list(info))
+
+
+def ensure_shared_grads(model, shared_model):
+    for param, shared_param in zip(model.parameters(),
+                                   shared_model.parameters()):
+        if shared_param.grad is not None:
+            return
+        shared_param._grad = param.grad

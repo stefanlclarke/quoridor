@@ -21,6 +21,9 @@ def play_game(info, memory_1, memory_2, game, on_policy_step, off_policy_step, s
     the shortest_path policy.
     """
 
+    if alternate_on_policy_step is not None and printing:
+        print('the alternative player is {}'.format(alternate_player))
+
     # we need this
     bot_out_dimension = 4 + 2 * (game.board_size - 1)**2
 
@@ -114,6 +117,10 @@ def play_game(info, memory_1, memory_2, game, on_policy_step, off_policy_step, s
             wall_handling \
             = game.move(move, get_time_info=True, reformat_from_onehot=True,
                         flip_reformat=flip)
+        
+        if printing:
+            print('reward {}'.format(reward))
+            print('off policy? {}'.format(off_policy))
 
         # save sate and move to memory
         memory.save(state, move, reward, off_policy, step_info, true_move)
@@ -132,6 +139,12 @@ def play_game(info, memory_1, memory_2, game, on_policy_step, off_policy_step, s
                 memory_2.rewards[-1] = memory_2.rewards[-1] + win_reward * \
                     (1 + win_speed_param / rounds)
 
+            terminal_state = game.get_state(flip=flip)
+            terminal_state_other_player = game.get_state(flip=not flip)
+
+            memory_1.save(terminal_state, move, 0, True, step_info, true_move)
+            memory_2.save(terminal_state_other_player, move, 0, True, step_info, true_move)
+
         # handle timing trackers
         t2 = time.time()
         game_processing_time += t2 - t1
@@ -142,7 +155,17 @@ def play_game(info, memory_1, memory_2, game, on_policy_step, off_policy_step, s
 
         # handle other trackers
         total_legal_moves += int(legal)
-        total_reward += reward
+
+        if alternate_player == 0 and game.moving_now == 0:
+            total_reward += memory_2.rewards[-1]
+        elif alternate_player == 1 and game.moving_now == 1:
+            total_reward += memory_1.rewards[-1]
+
+        if not playing:
+            if alternate_player == 0 and game.moving_now == 0:
+                total_reward += memory_2.rewards[-2]
+            elif alternate_player == 1 and game.moving_now == 1:
+                total_reward += memory_1.rewards[-2]
 
     if printing:
         game.print()
@@ -162,4 +185,9 @@ def play_game(info, memory_1, memory_2, game, on_policy_step, off_policy_step, s
         'game_length': rounds,
         'percentage_moves_off_policy': n_moves_off_policy / ticks
     }
+
+    if printing:
+        print('MEMORIES')
+        print(memory_1)
+        print(memory_2)
     return output_dict

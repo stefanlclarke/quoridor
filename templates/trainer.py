@@ -7,6 +7,7 @@ from templates.player import play_game
 import csv
 from matplotlib import pyplot as plt
 import pandas as pd
+from config import config
 
 PLAY_QUORIDOR = True
 
@@ -14,7 +15,7 @@ PLAY_QUORIDOR = True
 class Trainer:
     def __init__(self, board_size, start_walls, number_other_info=2, decrease_epsilon_every=100,
                  random_proportion=0.4, games_per_iter=100, total_reset_every=np.inf, save_name='',
-                 cores=1, old_selfplay=False, reload_every=5):
+                 cores=1, old_selfplay=False, reload_every=5, save_directory=''):
         """
         Template class for training AI on Quoridor.
 
@@ -35,6 +36,7 @@ class Trainer:
         self.games_per_iter = games_per_iter
         self.total_reset_every = total_reset_every
         self.save_name = save_name
+        self.save_directory = save_directory
 
         if self.total_reset_every is None:
             self.total_reset_every = np.inf
@@ -104,11 +106,12 @@ class Trainer:
 
         if not self.old_selfplay:
             return play_game(info, self.memory_1, self.memory_2, self.game, self.on_policy_step, self.off_policy_step,
-                             self.spbots, printing=printing, random_start=random_start)
+                             self.spbots, printing=printing, random_start=random_start, win_reward=config.WIN_REWARD)
         else:
             return play_game(info, self.memory_1, self.memory_2, self.game, self.on_policy_step, self.off_policy_step,
                              self.spbots, printing=printing, random_start=random_start,
-                             alternate_on_policy_step=self.loaded_on_policy_step, alternate_player=alternative_player)
+                             alternate_on_policy_step=self.loaded_on_policy_step, alternate_player=alternative_player,
+                             win_reward=config.WIN_REWARD)
 
     def reset_memories(self):
         """
@@ -143,12 +146,12 @@ class Trainer:
 
     def put_in_csv(self, info):
 
-        with open('{}.csv'.format(self.save_name), 'a') as f:
+        with open('{}.csv'.format(self.save_directory + '/' + self.save_name), 'a') as f:
             writer = csv.writer(f)
             writer.writerow(info)
 
     def recreate_csv_plot(self):
-        df = pd.read_csv('{}.csv'.format(self.save_name), index_col='epoch')
+        df = pd.read_csv(self.save_directory + '/' + '{}.csv'.format(self.save_name), index_col='epoch')
         categories = df.columns
 
         fig, ax = plt.subplots(len(categories), figsize=(20, 10))

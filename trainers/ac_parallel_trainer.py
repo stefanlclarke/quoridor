@@ -8,7 +8,7 @@ from optimizers.shared_adam import SharedAdam
 import torch.multiprocessing as mp
 from trainers.ac_trainer import ACWorker
 from models.actor_models import Actor
-from models.critic_models import Critic
+from models.critic_models import Critic, CriticConv
 from config import config
 
 MAX_SAVES = 500
@@ -27,8 +27,11 @@ class ParallelACTrainer:
             self.central_actor = central_actor
 
         if central_critic is None:
-            self.central_critic = Critic(critic_info['input_dim'], critic_info['critic_size_hidden'],
-                                         critic_info['critic_num_hidden'])
+            if not config.USE_CONV_NET:
+                self.central_critic = Critic(critic_info['input_dim'], critic_info['critic_size_hidden'],
+                                             critic_info['critic_num_hidden'])
+            else:
+                self.central_critic = CriticConv(**critic_info)
         else:
             self.central_critic = central_critic
 
@@ -39,8 +42,8 @@ class ParallelACTrainer:
         self.critic_info = critic_info
         self.actor_info = actor_info
 
-        trainers = [ACWorker(critic_info, actor_info, res_q=self.res_queue, save_name=save_name,
-                             save_directory=save_directory + 'saves/',
+        trainers = [ACWorker(critic_info=critic_info, actor_info=actor_info, res_q=self.res_queue, save_name=save_name,
+                             save_directory=save_directory,
                              central_critic=self.central_critic, central_actor=self.central_actor)
                     for _ in range(config.N_CORES)]
 
@@ -56,10 +59,16 @@ class ParallelACTrainer:
 
         i_sub = 0
         print_iteration('epoch', 'move legality', 'average reward', 'game len', 'off pol %', 'loss')
-        self.put_in_csv(['epoch', 'move legality', 'average reward', 'game len', 'off pol %', 'loss'])
+
+        df = pd.read_csv('{}.csv'.format(self.save_folder + '/' + self.save_name), index_col='epoch')
+        if len(df) == 0:
+            self.put_in_csv(['epoch', 'move legality', 'average reward', 'game len', 'off pol %', 'loss'])
+            start = 0
+        else:
+            start = int(df.index[-1] + 1)
 
         # loop over iterations
-        for i in range(number_iterations):
+        for i in range(start, number_iterations):
             if i % self.total_reset_every == 0:
                 i_sub = i
 
@@ -73,26 +82,6 @@ class ParallelACTrainer:
             [w.join() for w in self.trainers]
 
             self.res_queue.put(None)
-
-            # self.global_optimizer.step()
-            # self.global_optimizer.zero_grad()
-
-            # self.global_actor_opt.step()
-            # self.global_actor_opt.zero_grad()
-
-            central_state = self.central_actor.state_dict()
-            for key in self.central_actor.state_dict():
-                central_state[key] = central_state[key] * 0.
-                for w in self.trainers:
-                    central_state[key] += w.actor.state_dict()[key] / len(self.trainers)
-            self.central_actor.load_state_dict(central_state)
-
-            central_state = self.central_critic.state_dict()
-            for key in self.central_critic.state_dict():
-                central_state[key] = central_state[key] * 0.
-                for w in self.trainers:
-                    central_state[key] += w.net.state_dict()[key] / len(self.trainers)
-            self.central_critic.load_state_dict(central_state)
 
             out_info = list(iter(self.res_queue.get, None))
             average_out = sum([np.array(o) for o in out_info]) / len(out_info)
@@ -143,8 +132,9 @@ class ParallelACTrainer:
 
     def reset_workers(self):
 
-        trainers = [ACWorker(self.critic_info, self.actor_info, res_q=self.res_queue, save_name=self.save_name,
-                             save_directory=self.save_folder + 'saves/',
+        trainers = [ACWorker(critic_info=self.critic_info, actor_info=self.actor_info, res_q=self.res_queue,
+                             save_name=self.save_name,
+                             save_directory=self.save_folder,
                              central_critic=self.central_critic, central_actor=self.central_actor)
                     for _ in range(config.N_CORES)]
 
