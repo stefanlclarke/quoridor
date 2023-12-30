@@ -2,7 +2,7 @@ from game.game import Quoridor
 from easy_test_game.easy_test_game import EasyGame
 import numpy as np
 from models.memory import Memory
-from game.shortest_path import ShortestPathBot
+from game.game.shortest_path import ShortestPathBot
 from templates.player import play_game
 import csv
 from matplotlib import pyplot as plt

@@ -1,6 +1,6 @@
 import numpy as np
 from game.game import Quoridor
-from game.move_reformatter import move_reformatter
+from game.game.move_reformatter import move_reformatter
 
 moves_p1 = np.genfromtxt('game_samples/play600_p1.csv', delimiter=",")
 moves_p1 = moves_p1.reshape((moves_p1.size // 12, 12))

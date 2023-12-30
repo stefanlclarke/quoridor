@@ -1,7 +1,8 @@
 import numpy as np
+from quoridor_env.config import game_config
 
 
-def move_reformatter(move, board_size, flip=False):
+def move_reformatter(move, board_size=game_config.BOARD_SIZE, flip=False):
 
     """
     converts one-hot move into cartesian move
@@ -69,7 +70,7 @@ def move_reformatter(move, board_size, flip=False):
             return np.array([0, 0, m2_flipped, unflipped_m1, 0, 1])
 
 
-def unformatted_move_to_index(move, board_size, flip=False):
+def unformatted_move_to_index(move, board_size=game_config.BOARD_SIZE, flip=False):
 
     """
     takes a cartesian move and returns the index for the equivalent one-hot moves

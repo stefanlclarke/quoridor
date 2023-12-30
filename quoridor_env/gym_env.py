@@ -1,6 +1,6 @@
 import gym
-from game.game import Quoridor
-from game.game_config import game_config
+from quoridor_env.game.game import Quoridor
+from quoridor_env.config import game_config
 import numpy as np
 
 
@@ -61,7 +61,10 @@ class LoadedQuoridorGym(gym.Env, Quoridor):
         self.print()
 
     def reset(self):
-        self.reset_board()
+
+        random = np.random.uniform() < game_config.RANDOM_PROPORTION
+
+        self.reset_board(random_positions=random)
         self.player_team = np.random.choice(2)
 
         if self.player_team == 0:

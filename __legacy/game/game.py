@@ -3,7 +3,7 @@ import copy
 import time
 from game.game_helper_functions import move_piece, place_wall_with_check, check_win, get_legal_moves, flip_board
 from parameters import Parameters
-from game.printing import get_printable_board
+from game.game.printing import get_printable_board
 from game.graph_search import BoardGraph
 
 parameters = Parameters()

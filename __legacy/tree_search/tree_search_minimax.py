@@ -1,11 +1,11 @@
 import numpy as np
 import torch
 from parameters import Parameters
-from game.move_reformatter import move_reformatter, unformatted_move_to_index
+from game.game.move_reformatter import move_reformatter, unformatted_move_to_index
 from game.game_helper_functions import check_full_move_legal
 from templates.tree_search import TreeSearch
 from tqdm import tqdm
-from game.shortest_path import ShortestPathBot
+from game.game.shortest_path import ShortestPathBot
 
 parameters = Parameters()
 bot_in = parameters.bot_in_dimension

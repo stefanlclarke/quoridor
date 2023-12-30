@@ -2,8 +2,8 @@ from game.game import Quoridor
 from parameters import Parameters
 import numpy as np
 from models.memory import Memory
-from game.move_reformatter import *
-from game.shortest_path import ShortestPathBot
+from game.game.move_reformatter import *
+from game.game.shortest_path import ShortestPathBot
 import time
 
 parameters = Parameters()

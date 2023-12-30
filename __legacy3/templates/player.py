@@ -1,6 +1,6 @@
 import numpy as np
 import time
-from game.move_reformatter import unformatted_move_to_index
+from game.game.move_reformatter import unformatted_move_to_index
 
 
 def play_game(info, memory_1, memory_2, game, on_policy_step, off_policy_step, spbots,

@@ -5,12 +5,12 @@ from parameters import Parameters
 from models.q_models import QNet
 from models.wolpertinger_models import WolpActor, k_nearest
 import torch.nn as nn
-from game.move_reformatter import move_reformatter, unformatted_move_to_index
+from game.game.move_reformatter import move_reformatter, unformatted_move_to_index
 import copy
 import torch.optim as optim
 from game.game_helper_functions import *
 from loss_functions.sarsa_loss import sarsa_loss
-from game.shortest_path import *
+from game.game.shortest_path import *
 
 if torch.cuda.is_available():
     device = 'cuda:0'

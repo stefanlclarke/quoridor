@@ -3,8 +3,8 @@ import torch
 from game.game import Quoridor
 from parameters import Parameters
 from models.q_models import QNetBot
-from game.move_reformatter import move_reformatter
-from game.printing import get_printable_board
+from game.game.move_reformatter import move_reformatter
+from game.game.printing import get_printable_board
 from game.game_helper_functions import check_full_move_legal
 from templates.tree_search import TreeSearch
 from tqdm import tqdm

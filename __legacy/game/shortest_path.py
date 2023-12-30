@@ -1,7 +1,7 @@
 import numpy as np
 from game.game_helper_functions import *
 from parameters import Parameters
-from game.printing import get_printable_board
+from game.game.printing import get_printable_board
 import copy
 parameters = Parameters()
 board_size = parameters.board_size

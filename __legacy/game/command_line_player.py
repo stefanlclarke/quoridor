@@ -2,9 +2,9 @@ import numpy as np
 import copy
 from game.game import Quoridor
 from game.game_helper_functions import check_input_move_legal
-from game.printing import get_printable_board
+from game.game.printing import get_printable_board
 from parameters import Parameters
-from game.move_reformatter import move_reformatter
+from game.game.move_reformatter import move_reformatter
 
 parameters = Parameters()
 

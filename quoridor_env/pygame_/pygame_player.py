@@ -2,10 +2,10 @@ import numpy as np
 import pygame
 import sys
 
-from quorodor_env.game.game import Quoridor
-from game.game_helper_functions import check_input_move_legal
-from game.game.printing import get_printable_board
-from game.game.move_reformatter import move_reformatter
+from quoridor_env.game.game import Quoridor
+from quoridor_env.game.game_helper_functions import check_input_move_legal
+from quoridor_env.game.printing import get_printable_board
+from quoridor_env.game.move_reformatter import move_reformatter
 from config import config
 
 
