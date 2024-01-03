@@ -21,7 +21,10 @@ class ShortestPathBot:
 
         current_loc = np.where(board[:, :, self.playing + 1] == 1)
         pos = np.array([current_loc[0][0], current_loc[1][0]])
-        next_move = list(graph.direction_graph[self.playing - 1][tuple(pos)].keys())[0]
-        next_move = np.array(next_move) - pos
+        if len(list(graph.direction_graph[self.playing - 1][tuple(pos)].keys())) > 0:
+            next_move = list(graph.direction_graph[self.playing - 1][tuple(pos)].keys())[0]
+            next_move = np.array(next_move) - pos
+        else:
+            next_move = np.array([1, 0])
         move = np.array(next_move)
         return np.array([move[0], move[1], 0, 0, 0, 0])

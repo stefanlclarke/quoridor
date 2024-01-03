@@ -40,6 +40,11 @@ class Quoridor:
                 start position of player 2
         """
 
+        self.initialize_variables(board_size, start_walls, p1_start, p2_start, legal_move_reward,
+                                  illegal_move_reward)
+
+    def initialize_variables(self, board_size, start_walls, p1_start, p2_start, legal_move_reward,
+                             illegal_move_reward):
         # size of board
         self.board_size = board_size
 
@@ -251,13 +256,13 @@ class Quoridor:
         if not flip:
             if flatten:
                 flat_board = copy.copy(self.board).flatten()
-                return np.concatenate([flat_board, p1_walls, p2_walls])
+                return np.concatenate([flat_board, p1_walls, p2_walls]).astype(int)
             else:
                 return self.board, p1_walls, p2_walls
         else:
             if flatten:
                 flat_board = flip_board(self.board, self.players[0].pos, self.players[1].pos).flatten()
-                return np.concatenate([flat_board, p2_walls, p1_walls])
+                return np.concatenate([flat_board, p2_walls, p1_walls]).astype(int)
             else:
                 return flip_board(self.board, self.players[0].pos, self.players[1].pos), p1_walls, p2_walls
 
@@ -277,12 +282,16 @@ class Quoridor:
                                  int(np.random.choice(int(self.board_size)))])
             p2_start = np.array([int(self.board_size - 1 - np.random.choice(int(np.floor(self.board_size / 2)))),
                                  int(np.random.choice(int(self.board_size)))])
-            self.__init__(self.board_size, self.start_walls, p1_start, p2_start)
+            self.initialize_variables(self.board_size, self.start_walls, p1_start, p2_start,
+                                      self.legal_move_reward,
+                                      self.illegal_move_reward)
             self.randomly_place_walls()
 
         # otherwise just restart like normal
         else:
-            self.__init__(self.board_size, self.start_walls)
+            self.initialize_variables(self.board_size, self.start_walls, None, None,
+                                      self.legal_move_reward,
+                                      self.illegal_move_reward)
 
     def copy_game(self, other_game):
 

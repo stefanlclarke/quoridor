@@ -6,7 +6,7 @@ from quoridor_env.game.game import Quoridor
 from quoridor_env.game.game_helper_functions import check_input_move_legal
 from quoridor_env.game.printing import get_printable_board
 from quoridor_env.game.move_reformatter import move_reformatter
-from config import config
+from quoridor_env.config import game_config
 
 
 WINDOW_SIZE = 600
@@ -26,7 +26,7 @@ HOVER_RECTANGLE_COLOUR = (100, 100, 100)
 
 
 class PygamePlayer:
-    def __init__(self, board_size=config.BOARD_SIZE, start_walls=config.NUMBER_OF_WALLS,
+    def __init__(self, board_size=game_config.BOARD_SIZE, start_walls=game_config.NUMBER_OF_WALLS,
                  agent_1='human', agent_2='human'):
 
         """
