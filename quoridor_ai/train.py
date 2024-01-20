@@ -10,7 +10,7 @@ from quoridor_ai.model import ActorCritic, ActorCriticAgent
 from quoridor_ai.settings import settings
 
 
-OPPONENT_SAVE_DIR = '/Users/stefanclarkework/Desktop/quoridor/quoridor_ai/saves'
+OPPONENT_SAVE_DIR = 'quoridor_ai/saves'
 
 
 def ensure_shared_grads(model, shared_model):

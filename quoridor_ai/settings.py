@@ -15,7 +15,7 @@ class Args:
     num_steps = 200
     max_episode_length = 200
     no_shared = False
-    seconds_per_save = 60
+    seconds_per_save = 1
     init_time = time.time()
     last_save = time.time()
     steps_per_worker = int(1e20)

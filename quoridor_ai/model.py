@@ -46,7 +46,7 @@ class ActorCritic(torch.nn.Module):
         return self.critic_linear(x), self.actor_linear(x), (hx, cx)
 
     def save(self, save_name):
-        torch.save(self.state_dict(), '/Users/stefanclarkework/Desktop/quoridor/quoridor_ai/saves/' + save_name)
+        torch.save(self.state_dict(), 'quoridor_ai/saves/' + save_name)
 
 
 class ActorCriticAgent(QuoridoorAgent):
