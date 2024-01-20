@@ -1,0 +1,50 @@
+@dataclass
+class Args:
+    lr = 0.0005
+    seed = 1
+    gamma = 0.99
+    gae_lambda = 1.
+    entropy_coef = 0.01
+    value_loss_coef = 0.5
+    max_grad_norm = 50
+    num_processes = 4
+    num_steps = 200
+    max_episode_length = 200
+    no_shared = False
+    seconds_per_save = 60
+    init_time = time.time()
+    last_save = time.time()
+    steps_per_worker = int(1e20)
+    hidden_dimension = 256
+    num_hidden = 2
+    load_from_last = 200
+    load_distribution = "geometric"
+    reload_every = 1
+
+
+settings = Args()
+
+from dataclasses import dataclass
+
+
+@dataclass
+class Configuration:
+
+    # parameters for the game itself
+    BOARD_SIZE = 5
+    NUMBER_OF_WALLS = 3
+
+    # environment parameters
+    RANDOM_PROPORTION = 0.5
+    MAX_STEPS = 100
+
+    # reward parameters for training
+    WIN_REWARD = 1000
+    ILLEGAL_MOVE_REWARD = -0.25
+
+    # calculations
+    INPUT_DIM = BOARD_SIZE**2 * 4 + 2 * (NUMBER_OF_WALLS + 1)
+    OUTPUT_DIM = 4 + 2 * (BOARD_SIZE - 1)**2
+
+
+game_config = Configuration()

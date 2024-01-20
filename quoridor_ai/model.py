@@ -59,8 +59,8 @@ class ActorCriticAgent(QuoridoorAgent):
         if model is not None:
             self.model.load_state_dict(torch.load(model))
 
-        self.cx = torch.zeros(1, 256)
-        self.hx = torch.zeros(1, 256)
+        self.cx = torch.zeros(1, settings.lstm_dimension)
+        self.hx = torch.zeros(1, settings.lstm_dimension)
 
     def move(self, state):
         critic_val, action, (hx, cx) = self.model((torch.from_numpy(state).unsqueeze(0), (self.hx, self.cx)))

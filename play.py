@@ -8,9 +8,8 @@ from quoridor_ai.model import ActorCriticAgent
 
 spagent = ShortestPathAgent(0)
 randomagent = RandomAgent()
-ppoagent = PPOBaselineAgent(model_save_loc='/Users/stefanclarkework/Desktop/quoridor/baselines/models/PPO_example5.zip',
-                            env=LoadedQuoridorGym(opponent=randomagent))
-acagent = ActorCriticAgent('/Users/stefanclarkework/Desktop/quoridor/quoridor_ai/saves/23069.908165216446',
+#ppoagent = PPOBaselineAgent(model_save_loc='/Users/stefanclarkework/Desktop/quoridor/baselines/models/PPO_example5.zip', env=LoadedQuoridorGym(opponent=randomagent))
+acagent = ActorCriticAgent('/Users/stefanclarkework/Desktop/quoridor/quoridor_ai/saves/1704821443.5852802',
                            LoadedQuoridorGym(randomagent))
 
 player = PygamePlayer(agent_1=acagent, agent_2="human")

@@ -5,8 +5,8 @@ from dataclasses import dataclass
 class Configuration:
 
     # parameters for the game itself
-    BOARD_SIZE = 3
-    NUMBER_OF_WALLS = 1
+    BOARD_SIZE = 5
+    NUMBER_OF_WALLS = 3
 
     # environment parameters
     RANDOM_PROPORTION = 0.5

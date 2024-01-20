@@ -43,8 +43,8 @@ def train(rank, args, shared_model, counter, lock, optimizer=None, max_steps=1):
         # Sync with the shared model
         model.load_state_dict(shared_model.state_dict())
         if done:
-            cx = torch.zeros(1, 256)
-            hx = torch.zeros(1, 256)
+            cx = torch.zeros(1, settings.lstm_dimension)
+            hx = torch.zeros(1, settings.lstm_dimension)
         else:
             cx = cx.detach()
             hx = hx.detach()

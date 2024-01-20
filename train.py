@@ -22,6 +22,16 @@ if __name__ == "__main__":
         env.observation_space.shape[0], env.action_space)
     shared_model.share_memory()
 
+    prev_saves = os.listdir('quoridor_ai/saves')
+    if len(prev_saves) > 0:
+        float_saves = [float(x) for x in prev_saves]
+        final_save = str(max(float_saves))
+        shared_model.load_state_dict(torch.load('quoridor_ai/saves/' + final_save))
+        settings.init_time = - float(final_save)
+
+        print('INIT TIME IS {}'.format(settings.init_time))
+        print('LOADED MODEL {}'.format(final_save))
+
     if settings.no_shared:
         optimizer = None
     else:

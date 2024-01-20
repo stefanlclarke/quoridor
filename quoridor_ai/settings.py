@@ -19,11 +19,12 @@ class Args:
     init_time = time.time()
     last_save = time.time()
     steps_per_worker = int(1e20)
-    hidden_dimension = 256
-    num_hidden = 2
+    hidden_dimension = 512
+    num_hidden = 3
     load_from_last = 200
     load_distribution = "geometric"
     reload_every = 1
+    lstm_dimension = hidden_dimension
 
 
 settings = Args()

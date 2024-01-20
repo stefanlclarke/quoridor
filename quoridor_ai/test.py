@@ -6,6 +6,7 @@ import torch.nn.functional as F
 
 from quoridor_ai.envs import get_env
 from quoridor_ai.model import ActorCritic
+from quoridor_ai.settings import settings
 
 
 def test(rank, args, shared_model, counter):
@@ -32,8 +33,8 @@ def test(rank, args, shared_model, counter):
         # Sync with the shared model
         if done:
             model.load_state_dict(shared_model.state_dict())
-            cx = torch.zeros(1, 256)
-            hx = torch.zeros(1, 256)
+            cx = torch.zeros(1, settings.lstm_dimension)
+            hx = torch.zeros(1, settings.lstm_dimension)
         else:
             cx = cx.detach()
             hx = hx.detach()
